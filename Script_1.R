@@ -26,6 +26,24 @@ dados %>%
   summarise(total=n()) %>% 
   arrange(desc(total))
 
+#pegando dados do Brasil inteiro para os meses de março e abril de 2018
+
+dados_teste <- fetch_datasus(year_start = 2018, month_start = 3, year_end = 2018, month_end = 4, information_system = "SIH-RD")
+dados_teste <- process_sih(dados_teste)
+
+library(skimr)
+skim(dados_teste)
+
+#MUNIC_RES indica o código do município de residência do entrante
+#A base com PIBs per capita contém os mesmo códigos, porém com um dígito a mais
+
+dados_teste1 <- dados_teste %>% 
+  filter(MORTE==1) %>% 
+  select(ANO_CMPT,MES_CMPT,RACA_COR,SEXO,UF_ZI,MUNIC_RES) %>% 
+  group_by(MUNIC_RES,MES_CMPT) %>% 
+  summarise(total=n()) %>% 
+  arrange(MES_CMPT,MUNIC_RES)
+
 ####
 
 #Base de dados de óbitos
