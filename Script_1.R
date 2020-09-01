@@ -44,6 +44,35 @@ dados_teste1 <- dados_teste %>%
   summarise(total=n()) %>% 
   arrange(MES_CMPT,MUNIC_RES)
 
+#2020 - São Paulo
+
+library(microdatasus)
+
+dados_teste2 <- fetch_datasus(year_start = 2020, month_start = 3, year_end = 2020, month_end = 4,uf="SP", information_system = "SIH-RD")
+dados_teste2 <- process_sih(dados_teste2)
+
+#Variáveis: Município de Residência, Município do Hospital, Mês, Morte, Sexo
+#Dias de Permanência, Raça/Cor, Idade, Instrução, Ocupação, Número de diárias
+
+teste_2 <- dados_teste2 %>% 
+  select(MUNIC_RES, MUNIC_MOV, MES_CMPT, MORTE, SEXO, DIAS_PERM, 
+         RACA_COR, IDADE, INSTRU, CBOR, QT_DIARIAS) %>% 
+  filter(MORTE == "Sim")
+
+teste_2 %>% 
+  group_by(MUNIC_RES, MES_CMPT) %>% 
+  summarise(total = n()) %>% 
+  arrange(MES_CMPT, desc(total))
+
+teste_2 %>% 
+  group_by(MUNIC_RES) %>% 
+  summarise(total = n()) %>% 
+  arrange(desc(total))
+
+#Necessário ainda baixar a base para todos os estados
+#Possivelmente adicionar o nome dos municípios, além do 
+#código do IBGE
+
 ####
 
 #Base de dados de óbitos
@@ -66,6 +95,15 @@ dados_2018 %>%
   summarise(total=n()) %>% 
   arrange(desc(total))
 
-#mudança
+#São Paulo - 2018
+#Parece que não é possível acessar os dados para 2019 e 2020
+
+dados_teste3 <- fetch_datasus(year_start = 2018, year_end = 2018, uf = "SP", information_system = "SIM-DO")
+dados_teste3 <- process_sim(dados_teste3)
+
+teste_3 <- dados_teste3 %>% 
+  filter(TIPOBITO != 2) %>% 
+  select(DTOBITO, munResNome, IDADEanos, SEXO,
+         RACACOR, ESC, ESCMAE, OCUP, CAUSABAS)
 
 
