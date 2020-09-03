@@ -1,24 +1,30 @@
 #Projeto Insper Data - Duque
 
-#Aprendendo a usar a base dataSUS
-
-#Há três bases de dados disponíveis:
-#Entradas no SUS (SIH RD), óbitos (SIM) 
-#e nascimentos (SINASC)
+#Pacotes utilizados
 
 library(dplyr)
 library(tidyverse)
+library(microdatasus)
+library(skimr)
+library(readxl)
+
+#Aprendendo a usar a base dataSUS
+
+#Ha tres bases de dados disponiveis:
+#Entradas no SUS (SIH RD), obitos (SIM) 
+#e nascimentos (SINASC)
+
 
 #teste para entradas no SUS
 #teste com o Rio de Janeiro
 install.packages("devtools")
 devtools::install_github("rfsaldanha/microdatasus")
-library(microdatasus)
+
 
 dados <- fetch_datasus(year_start = 2018, month_start = 3, year_end = 2018, month_end = 4, uf = "RJ", information_system = "SIH-RD")
 dados <- process_sih(dados)
 
-#agrupando as mortes no RJ por município e por mês
+#agrupando as mortes no RJ por municupio e por mes
 
 dados %>% 
   filter(MORTE=="Sim") %>% 
@@ -26,12 +32,11 @@ dados %>%
   summarise(total=n()) %>% 
   arrange(desc(total))
 
-#pegando dados do Brasil inteiro para os meses de março e abril de 2018
+#pegando dados do Brasil inteiro para os meses de marco e abril de 2018
 
 dados_teste <- fetch_datasus(year_start = 2018, month_start = 3, year_end = 2018, month_end = 4, information_system = "SIH-RD")
 dados_teste <- process_sih(dados_teste)
 
-library(skimr)
 skim(dados_teste)
 
 #MUNIC_RES indica o código do município de residência do entrante
@@ -44,15 +49,13 @@ dados_teste1 <- dados_teste %>%
   summarise(total=n()) %>% 
   arrange(MES_CMPT,MUNIC_RES)
 
-#2020 - São Paulo
-
-library(microdatasus)
+#2020 - Sao Paulo
 
 dados_teste2 <- fetch_datasus(year_start = 2020, month_start = 3, year_end = 2020, month_end = 4,uf="SP", information_system = "SIH-RD")
 dados_teste2 <- process_sih(dados_teste2)
 
-#Variáveis: Município de Residência, Município do Hospital, Mês, Morte, Sexo
-#Dias de Permanência, Raça/Cor, Idade, Instrução, Ocupação, Número de diárias
+#Variaveis: Municipio de Residencia, Municipio do Hospital, Mes, Morte, Sexo
+#Dias de Permanencia, Raca/Cor, Idade, Instrucao, Ocupacaoo, Numero de diarias
 
 teste_2 <- dados_teste2 %>% 
   select(MUNIC_RES, MUNIC_MOV, MES_CMPT, MORTE, SEXO, DIAS_PERM, 
@@ -69,34 +72,32 @@ teste_2 %>%
   summarise(total = n()) %>% 
   arrange(desc(total))
 
-#Necessário ainda baixar a base para todos os estados
-#Possivelmente adicionar o nome dos municípios, além do 
-#código do IBGE
+#Necessario ainda baixar a base para todos os estados
+#Possivelmente adicionar o nome dos municipios, alem do 
+#codigo do IBGE
 
 ####
 
-#Base de dados de óbitos
+#Base de dados de obitos
 install.packages("devtools")
 devtools::install_github("rfsaldanha/microdatasus")
-library(microdatasus)
+
 dados_2018 <- fetch_datasus(year_start = 2018, year_end = 2018, uf = "RJ", information_system = "SIM-DO")
 dados_2018 <- process_sim(dados_2018)
 
-library(dplyr)
-library(tidyverse)
 
 dados_2018 %>% 
   select(munResNome,CAUSABAS,DTOBITO)
 
-#Seria preciso separar as datas por dia, mês e ano
+#Seria preciso separar as datas por dia, mes e ano
 
 dados_2018 %>% 
   group_by(munResNome) %>% 
   summarise(total=n()) %>% 
   arrange(desc(total))
 
-#São Paulo - 2018
-#Parece que não é possível acessar os dados para 2019 e 2020
+#Sao Paulo - 2018
+#Parece que no e possivel acessar os dados para 2019 e 2020
 
 dados_teste3 <- fetch_datasus(year_start = 2018, year_end = 2018, uf = "SP", information_system = "SIM-DO")
 dados_teste3 <- process_sim(dados_teste3)
@@ -106,9 +107,7 @@ teste_3 <- dados_teste3 %>%
   select(DTOBITO, munResNome, IDADEanos, SEXO,
          RACACOR, ESC, ESCMAE, OCUP, CAUSABAS)
 
-#Calculando o excesso de mortalidade para o mês de Maio
-
-library(microdatasus)
+#Calculando o excesso de mortalidade para o mes de Maio
 
 dados_t_2018 <- fetch_datasus(year_start = 2018, month_start = 5, year_end = 2018, month_end = 5, information_system = "SIH-RD")
 dados_m_2018 <- process_sih(dados_t_2018)
@@ -151,6 +150,29 @@ View(excesso %>%
 
 View(excesso)
 
+## Analise da COVID-19 
 
+# Selecione diretorio contendo as bases 
+
+setwd("C:/Users/Pedro Saboia/Desktop/Insper Data")
+
+# Buscando os dados referentes a COVID-19
+
+covid_bruto <- read_excel('HIST_PAINEL_COVIDBR_31ago2020_1.xlsx',
+                          col_types = c('text', 'text', 'text','numeric','numeric','numeric',
+                                        'text', 'date','numeric','numeric','numeric','numeric',
+                                        'numeric','numeric','numeric','numeric','logical'))
+
+
+covid_mensal <- covid_bruto %>%
+  filter(codmun != 0, 
+         codRegiaoSaude != 0,
+         data == as.Date("2020-03-31")|
+           data == as.Date("2020-04-30")|
+           data == as.Date("2020-05-31")|
+           data == as.Date("2020-06-30")|
+           data == as.Date("2020-07-31")|
+           data == as.Date("2020-08-31")) %>% 
+  select(-c(emAcompanhamentoNovos, Recuperadosnovos, semanaEpi))
 
 
