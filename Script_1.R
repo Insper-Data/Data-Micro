@@ -106,4 +106,51 @@ teste_3 <- dados_teste3 %>%
   select(DTOBITO, munResNome, IDADEanos, SEXO,
          RACACOR, ESC, ESCMAE, OCUP, CAUSABAS)
 
+#Calculando o excesso de mortalidade para o mês de Maio
+
+library(microdatasus)
+
+dados_t_2018 <- fetch_datasus(year_start = 2018, month_start = 5, year_end = 2018, month_end = 5, information_system = "SIH-RD")
+dados_m_2018 <- process_sih(dados_t_2018)
+
+dados_m_2019 <- fetch_datasus(year_start = 2019, month_start = 5, year_end = 2019, month_end = 5, information_system = "SIH-RD")
+dados_m_2019 <- process_sih(dados_m_2019)
+
+dados_m_2020 <- fetch_datasus(year_start = 2020, month_start = 5, year_end = 2020, month_end = 5, information_system = "SIH-RD")
+dados_m_2020 <- process_sih(dados_m_2020)
+
+d_18 <- dados_m_2018 %>%
+  filter(MORTE=="Sim") %>% 
+  select(MUNIC_RES, MORTE) %>% 
+  group_by(MUNIC_RES) %>% 
+  summarise(total_5_18 = n())
+
+d_19 <- dados_m_2019 %>%
+  filter(MORTE=="Sim") %>% 
+  select(MUNIC_RES, MORTE) %>% 
+  group_by(MUNIC_RES) %>% 
+  summarise(total_5_19 = n())
+
+d_20 <- dados_m_2020 %>%
+  filter(MORTE=="Sim") %>% 
+  select(MUNIC_RES, MORTE) %>% 
+  group_by(MUNIC_RES) %>% 
+  summarise(total_5_20 = n())
+
+d_18_19 <- d_18 %>% 
+  full_join(d_19,
+            by = c("MUNIC_RES" = "MUNIC_RES"))
+
+excesso <- d_18_19 %>% 
+  full_join(d_20,
+            by = c("MUNIC_RES" = "MUNIC_RES")) %>% 
+  mutate(excesso_mortes = total_5_20 / ((total_5_18 + total_5_19)/2))
+
+View(excesso %>% 
+  arrange(desc(total_5_20)))
+
+View(excesso)
+
+
+
 
