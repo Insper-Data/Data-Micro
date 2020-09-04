@@ -8,6 +8,7 @@ library(microdatasus)
 library(skimr)
 library(readxl)
 
+
 #Aprendendo a usar a base dataSUS
 
 #Ha tres bases de dados disponiveis:
@@ -131,7 +132,8 @@ d_19 <- dados_m_2019 %>%
   summarise(total_5_19 = n())
 
 d_20 <- dados_m_2020 %>%
-  filter(MORTE=="Sim") %>% 
+  filter(MORTE== 1 ) %>%
+  mutate(MUNIC_RES = as.integer(MUNIC_RES))
   select(MUNIC_RES, MORTE) %>% 
   group_by(MUNIC_RES) %>% 
   summarise(total_5_20 = n())
@@ -174,5 +176,4 @@ covid_mensal <- covid_bruto %>%
            data == as.Date("2020-07-31")|
            data == as.Date("2020-08-31")) %>% 
   select(-c(emAcompanhamentoNovos, Recuperadosnovos, semanaEpi))
-
 
