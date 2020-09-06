@@ -177,3 +177,10 @@ covid_mensal <- covid_bruto %>%
            data == as.Date("2020-08-31")) %>% 
   select(-c(emAcompanhamentoNovos, Recuperadosnovos, semanaEpi))
 
+covid_m_rs <- covid_mensal %>% 
+  group_by(codRegiaoSaude, data) %>% 
+  summarise(Casos_Acumulados = sum(casosAcumulado))
+
+dic <- covid_mensal %>% 
+  group_by(codmun) %>% 
+  summarise(codSaude = mean(codRegiaoSaude))
