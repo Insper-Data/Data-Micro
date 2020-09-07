@@ -202,6 +202,14 @@ d_20_rs <- d_20 %>%
   group_by(codSaude) %>% 
   summarise(mortes_20 = sum(total_5_20))
 
-excesso_rs <- d_18_rs 
+excesso_rs <- d_18_rs %>% 
+  left_join(d_19_rs, by = c('codSaude' = 'codSaude')) %>% 
+  left_join(d_20_rs, by = c('codSaude' = 'codSaude')) %>% 
+  mutate(excesso_mortes = mortes_20 / ((mortes_18 + mortes_19)/2))
+  
+  
+  
+  
+  
   
 
