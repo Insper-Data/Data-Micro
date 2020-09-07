@@ -132,8 +132,8 @@ d_19 <- dados_m_2019 %>%
   summarise(total_5_19 = n())
 
 d_20 <- dados_m_2020 %>%
-  filter(MORTE== 1 ) %>%
-  mutate(MUNIC_RES = as.integer(MUNIC_RES))
+  filter(MORTE=="Sim" ) %>%
+  mutate(MUNIC_RES = as.integer(MUNIC_RES)) %>% 
   select(MUNIC_RES, MORTE) %>% 
   group_by(MUNIC_RES) %>% 
   summarise(total_5_20 = n())
@@ -184,3 +184,24 @@ covid_m_rs <- covid_mensal %>%
 dic <- covid_mensal %>% 
   group_by(codmun) %>% 
   summarise(codSaude = mean(codRegiaoSaude))
+
+## Agrupar mortes por região de saúde 
+
+d_18_rs <- d_18 %>% 
+  left_join(dic, by = c('MUNIC_RES' = 'codmun')) %>% 
+  group_by(codSaude) %>% 
+  summarise(mortes_18 = sum(total_5_18))
+
+d_19_rs <- d_19 %>% 
+  left_join(dic, by = c('MUNIC_RES' = 'codmun')) %>% 
+  group_by(codSaude) %>% 
+  summarise(mortes_19 = sum(total_5_19))
+
+d_20_rs <- d_20 %>% 
+  left_join(dic, by = c('MUNIC_RES' = 'codmun')) %>% 
+  group_by(codSaude) %>% 
+  summarise(mortes_20 = sum(total_5_20))
+
+excesso_rs <- d_18_rs 
+  
+
