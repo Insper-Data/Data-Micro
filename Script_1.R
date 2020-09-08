@@ -183,7 +183,10 @@ covid_m_rs <- covid_mensal %>%
 
 dic <- covid_mensal %>% 
   group_by(codmun) %>% 
-  summarise(codSaude = mean(codRegiaoSaude))
+  summarise(codSaude = mean(codRegiaoSaude),
+            nome_regiao = nomeRegiaoSaude,
+            estado = estado) %>% 
+  unique()
 
 ## Agrupar mortes por região de saúde 
 
@@ -207,11 +210,30 @@ excesso_rs <- d_18_rs %>%
   left_join(d_20_rs, by = c('codSaude' = 'codSaude')) %>% 
   mutate(excesso_mortes = mortes_20 / ((mortes_18 + mortes_19)/2))
   
-## Criação do índice de contaminação   
+## Criacao do indice de contaminaçao   
   
 covid_m_rs <- covid_m_rs %>% 
   group_by(data) %>%
   mutate(index = ((Casos_Acumulados - min(Casos_Acumulados))/(max(Casos_Acumulados) - min(Casos_Acumulados))) * 100)
   
-  
+## Populacao 
+
+
+pop <- read_excel('ESTIMA_PO.2019-2019.xls', col_names = c('cod', 'Mun', 'populacao'),
+                  col_types = c('text', 'text', 'numeric')) %>% 
+  select(-cod) %>% 
+  filter(Mun != 'Municípios')
+
+ibge <- read_excel('RELATORIO_DTB_BRASIL_MUNICIPIO.XLS', col_types = 'text') %>%  
+  select(c('Código Município Completo', 'Nome_Município')) %>% 
+  separate('Código Município Completo', into = c('idmun', 'extra'), sep = -1) %>% 
+  select(-extra)
+
+popul <- ibge %>% 
+  left_join(pop, by = c('Nome_Município' = 'Mun')) %>%
+  filter(!is.na(populacao)) %>%
+  mutate(idmun = as.double(idmun)) %>% 
+  left_join(dic, by = c('idmun' = 'codmun')) %>%
+  group_by(codSaude, nome_regiao, estado) %>%
+  summarise(populacao_total = sum(populacao))
 
