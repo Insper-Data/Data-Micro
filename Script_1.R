@@ -210,7 +210,7 @@ excesso_rs <- d_18_rs %>%
 ## Criação do índice de contaminação   
   
 covid_m_rs <- covid_m_rs %>% 
-  group_by(data) %>% 
+  group_by(data) %>%
   mutate(index = ((Casos_Acumulados - min(Casos_Acumulados))/(max(Casos_Acumulados) - min(Casos_Acumulados))) * 100)
   
   
