@@ -21,34 +21,14 @@ library(readxl)
 install.packages("devtools")
 devtools::install_github("rfsaldanha/microdatasus")
 
-
 dados <- fetch_datasus(year_start = 2018, month_start = 3, year_end = 2018, month_end = 4, uf = "RJ", information_system = "SIH-RD")
 dados <- process_sih(dados)
 
-#agrupando as mortes no RJ por municupio e por mes
-
-dados %>% 
-  filter(MORTE=="Sim") %>% 
-  group_by(munResNome,MES_CMPT) %>% 
-  summarise(total=n()) %>% 
-  arrange(desc(total))
-
-#pegando dados do Brasil inteiro para os meses de marco e abril de 2018
-
-dados_teste <- fetch_datasus(year_start = 2018, month_start = 3, year_end = 2018, month_end = 4, information_system = "SIH-RD")
-dados_teste <- process_sih(dados_teste)
-
-skim(dados_teste)
+skim(dados)
 
 #MUNIC_RES indica o código do município de residência do entrante
 #A base com PIBs per capita contém os mesmo códigos, porém com um dígito a mais
 
-dados_teste1 <- dados_teste %>% 
-  filter(MORTE==1) %>% 
-  select(ANO_CMPT,MES_CMPT,RACA_COR,SEXO,UF_ZI,MUNIC_RES) %>% 
-  group_by(MUNIC_RES,MES_CMPT) %>% 
-  summarise(total=n()) %>% 
-  arrange(MES_CMPT,MUNIC_RES)
 
 #2020 - Sao Paulo
 
@@ -63,15 +43,6 @@ teste_2 <- dados_teste2 %>%
          RACA_COR, IDADE, INSTRU, CBOR, QT_DIARIAS) %>% 
   filter(MORTE == "Sim")
 
-teste_2 %>% 
-  group_by(MUNIC_RES, MES_CMPT) %>% 
-  summarise(total = n()) %>% 
-  arrange(MES_CMPT, desc(total))
-
-teste_2 %>% 
-  group_by(MUNIC_RES) %>% 
-  summarise(total = n()) %>% 
-  arrange(desc(total))
 
 #Necessario ainda baixar a base para todos os estados
 #Possivelmente adicionar o nome dos municipios, alem do 
@@ -180,13 +151,7 @@ excesso_rs <- d_18_rs %>%
   left_join(d_19_rs, by = c('codSaude' = 'codSaude')) %>% 
   left_join(d_20_rs, by = c('codSaude' = 'codSaude')) %>% 
   mutate(excesso_mortes = mortes_20 / ((mortes_18 + mortes_19)/2))
-  
-## Criacao do indice de contamina?ao   
-  
-covid_m_rs <- covid_m_rs %>% 
-  group_by(data) %>%
-  mutate(index = ((Casos_Acumulados - min(Casos_Acumulados))/(max(Casos_Acumulados) - min(Casos_Acumulados))) * 100)
-  
+
 ## Populacao 
 
 
@@ -208,7 +173,17 @@ popul <- ibge %>%
   group_by(codSaude, nome_regiao, estado) %>%
   summarise(populacao_total = sum(populacao))
 
-# Baixando dados de Maio, Junho e Julho para construção da base final
+## Criacao do indice de contaminacao  
+
+covid_data <- covid_m_rs %>% 
+  left_join(popul, by = c('codRegiaoSaude' = 'codSaude')) %>% 
+  mutate(casos_relativos = (Casos_Acumulados / populacao_total) * 10000)
+
+covid_m_rs <- covid_m_rs %>% 
+  group_by(data) %>%
+  mutate(index = ((Casos_Acumulados - min(Casos_Acumulados))/(max(Casos_Acumulados) - min(Casos_Acumulados))) * 100)
+
+## Baixando dados de Maio, Junho e Julho para construção da base final
 
 
 SIH_18 <- fetch_datasus(year_start = 2018, month_start = 5, year_end = 2018, month_end = 7, information_system = "SIH-RD")
@@ -224,28 +199,39 @@ SIH_20 <- process_sih(SIH_20)
 SIH_18 <- SIH_18 %>%   
   filter(MORTE=="Sim") %>% 
   select(MUNIC_RES, MES_CMPT, MORTE, RACA_COR, SEXO, IDADE) %>% 
-  mutate(MUNIC_RES = as.integer(MUNIC_RES)) %>% 
-  left_join(dic, by = c("MUNIC_RES" = "codmun")) %>% 
-  group_by(codSaude,MES_CMPT) %>% 
-  summarise(mortes_18 = n())
+  mutate(MUNIC_RES = as.integer(MUNIC_RES)) 
 
 SIH_19 <- SIH_19 %>%   
   filter(MORTE=="Sim") %>% 
   select(MUNIC_RES, MES_CMPT, MORTE, RACA_COR, SEXO, IDADE) %>% 
-  mutate(MUNIC_RES = as.integer(MUNIC_RES)) %>% 
-  left_join(dic, by = c("MUNIC_RES" = "codmun")) %>% 
-  group_by(codSaude,MES_CMPT) %>% 
-  summarise(mortes_19 = n())
+  mutate(MUNIC_RES = as.integer(MUNIC_RES)) 
 
 SIH_20 <- SIH_20 %>%   
   filter(MORTE=="Sim") %>% 
   select(MUNIC_RES, MES_CMPT, MORTE, RACA_COR, SEXO, IDADE) %>% 
-  mutate(MUNIC_RES = as.integer(MUNIC_RES)) %>% 
+  mutate(MUNIC_RES = as.integer(MUNIC_RES)) 
+
+#Adicionando o código da região de saúde
+
+mort_reg_18 <- SIH_18 %>% 
   left_join(dic, by = c("MUNIC_RES" = "codmun")) %>% 
-  group_by(codSaude,MES_CMPT) %>% 
+  group_by(MES_CMPT, codSaude) %>% 
+  summarise(mortes_18 = n())
+
+mort_reg_19 <- SIH_19 %>% 
+  left_join(dic, by = c("MUNIC_RES" = "codmun")) %>% 
+  group_by(MES_CMPT, codSaude) %>% 
+  summarise(mortes_19 = n())
+
+mort_reg_20 <- SIH_20 %>% 
+  left_join(dic, by = c("MUNIC_RES" = "codmun")) %>% 
+  group_by(MES_CMPT, codSaude) %>% 
   summarise(mortes_20 = n())
 
-excesso_f <- SIH_18 %>% 
-  left_join(SIH_19, by = c("codSaude" = "codSaude")) %>% 
-  left_join(SIH_20, by = c("codSaude" = "codSaude")) %>% 
-  mutate(excesso_mortes = mortes_20 / ((mortes_18 + mortes_19)/2))
+excesso_f <- mort_reg_18 %>% 
+  left_join(mort_reg_19, by = c("codSaude" = "codSaude",
+                                "MES_CMPT" = "MES_CMPT")) %>% 
+  left_join(mort_reg_20, by = c("codSaude" = "codSaude",
+                                "MES_CMPT" = "MES_CMPT")) %>% 
+  mutate(excesso_mortes = mortes_20 / 
+           ((mortes_18 + mortes_19)/2))
