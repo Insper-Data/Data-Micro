@@ -130,7 +130,7 @@ dic <- covid_mensal %>%
             estado = estado) %>% 
   unique()
 
-## Agrupar mortes por regi?o de sa?de 
+## Agrupar mortes por regiao de saude 
 
 d_18_rs <- d_18 %>% 
   left_join(dic, by = c('MUNIC_RES' = 'codmun')) %>% 
@@ -182,6 +182,7 @@ covid_data <- covid_m_rs %>%
 covid_m_rs <- covid_m_rs %>% 
   group_by(data) %>%
   mutate(index = ((Casos_Acumulados - min(Casos_Acumulados))/(max(Casos_Acumulados) - min(Casos_Acumulados))) * 100)
+
 
 ## Baixando dados de Maio, Junho e Julho para construção da base final
 
