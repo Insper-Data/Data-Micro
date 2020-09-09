@@ -159,7 +159,7 @@ dic <- covid_mensal %>%
             estado = estado) %>% 
   unique()
 
-## Agrupar mortes por regi?o de sa?de 
+## Agrupar mortes por regiao de saude 
 
 d_18_rs <- d_18 %>% 
   left_join(dic, by = c('MUNIC_RES' = 'codmun')) %>% 
@@ -181,34 +181,38 @@ excesso_rs <- d_18_rs %>%
   left_join(d_20_rs, by = c('codSaude' = 'codSaude')) %>% 
   mutate(excesso_mortes = mortes_20 / ((mortes_18 + mortes_19)/2))
   
-## Criacao do indice de contamina?ao   
-  
-covid_m_rs <- covid_m_rs %>% 
-  group_by(data) %>%
-  mutate(index = ((Casos_Acumulados - min(Casos_Acumulados))/(max(Casos_Acumulados) - min(Casos_Acumulados))) * 100)
-  
 ## Populacao 
 
 
 pop <- read_excel('ESTIMA_PO.2019-2019.xls', col_names = c('cod', 'Mun', 'populacao'),
                   col_types = c('text', 'text', 'numeric')) %>% 
   select(-cod) %>% 
-  filter(Mun != 'Munic?pios')
+  filter(Mun != 'Municípios')
 
 ibge <- read_excel('RELATORIO_DTB_BRASIL_MUNICIPIO.XLS', col_types = 'text') %>%  
-  select(c('C?digo Munic?pio Completo', 'Nome_Munic?pio')) %>% 
-  separate('C?digo Munic?pio Completo', into = c('idmun', 'extra'), sep = -1) %>% 
+  select(c('Código Município Completo', 'Nome_Município')) %>% 
+  separate('Código Município Completo', into = c('idmun', 'extra'), sep = -1) %>% 
   select(-extra)
 
 popul <- ibge %>% 
-  left_join(pop, by = c('Nome_Munic?pio' = 'Mun')) %>%
+  left_join(pop, by = c('Nome_Município' = 'Mun')) %>%
   filter(!is.na(populacao)) %>%
   mutate(idmun = as.double(idmun)) %>% 
   left_join(dic, by = c('idmun' = 'codmun')) %>%
   group_by(codSaude, nome_regiao, estado) %>%
   summarise(populacao_total = sum(populacao))
 
-# Baixando dados de Maio, Junho e Julho para construÃ§Ã£o da base final
+## Criacao do indice de contaminacao  
+
+covid_data <- covid_m_rs %>% 
+  left_join(popul, by = c('codRegiaoSaude' = 'codSaude')) %>% 
+  mutate(casos_relativos = (Casos_Acumulados / populacao_total) * 10000)
+
+covid_m_rs <- covid_m_rs %>% 
+  group_by(data) %>%
+  mutate(index = ((Casos_Acumulados - min(Casos_Acumulados))/(max(Casos_Acumulados) - min(Casos_Acumulados))) * 100)
+
+# Baixando dados de Maio, Junho e Julho para construcao da base final
 
 
 SIH_18 <- fetch_datasus(year_start = 2018, month_start = 5, year_end = 2018, month_end = 7, information_system = "SIH-RD")
