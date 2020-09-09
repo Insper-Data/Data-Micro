@@ -79,35 +79,6 @@ teste_2 %>%
 
 ####
 
-#Base de dados de obitos
-install.packages("devtools")
-devtools::install_github("rfsaldanha/microdatasus")
-
-dados_2018 <- fetch_datasus(year_start = 2018, year_end = 2018, uf = "RJ", information_system = "SIM-DO")
-dados_2018 <- process_sim(dados_2018)
-
-
-dados_2018 %>% 
-  select(munResNome,CAUSABAS,DTOBITO)
-
-#Seria preciso separar as datas por dia, mes e ano
-
-dados_2018 %>% 
-  group_by(munResNome) %>% 
-  summarise(total=n()) %>% 
-  arrange(desc(total))
-
-#Sao Paulo - 2018
-#Parece que no e possivel acessar os dados para 2019 e 2020
-
-dados_teste3 <- fetch_datasus(year_start = 2018, year_end = 2018, uf = "SP", information_system = "SIM-DO")
-dados_teste3 <- process_sim(dados_teste3)
-
-teste_3 <- dados_teste3 %>% 
-  filter(TIPOBITO != 2) %>% 
-  select(DTOBITO, munResNome, IDADEanos, SEXO,
-         RACACOR, ESC, ESCMAE, OCUP, CAUSABAS)
-
 #Calculando o excesso de mortalidade para o mes de Maio
 
 dados_t_2018 <- fetch_datasus(year_start = 2018, month_start = 5, year_end = 2018, month_end = 5, information_system = "SIH-RD")
@@ -188,7 +159,7 @@ dic <- covid_mensal %>%
             estado = estado) %>% 
   unique()
 
-## Agrupar mortes por região de saúde 
+## Agrupar mortes por regi?o de sa?de 
 
 d_18_rs <- d_18 %>% 
   left_join(dic, by = c('MUNIC_RES' = 'codmun')) %>% 
@@ -210,7 +181,7 @@ excesso_rs <- d_18_rs %>%
   left_join(d_20_rs, by = c('codSaude' = 'codSaude')) %>% 
   mutate(excesso_mortes = mortes_20 / ((mortes_18 + mortes_19)/2))
   
-## Criacao do indice de contaminaçao   
+## Criacao do indice de contamina?ao   
   
 covid_m_rs <- covid_m_rs %>% 
   group_by(data) %>%
@@ -222,18 +193,59 @@ covid_m_rs <- covid_m_rs %>%
 pop <- read_excel('ESTIMA_PO.2019-2019.xls', col_names = c('cod', 'Mun', 'populacao'),
                   col_types = c('text', 'text', 'numeric')) %>% 
   select(-cod) %>% 
-  filter(Mun != 'Municípios')
+  filter(Mun != 'Munic?pios')
 
 ibge <- read_excel('RELATORIO_DTB_BRASIL_MUNICIPIO.XLS', col_types = 'text') %>%  
-  select(c('Código Município Completo', 'Nome_Município')) %>% 
-  separate('Código Município Completo', into = c('idmun', 'extra'), sep = -1) %>% 
+  select(c('C?digo Munic?pio Completo', 'Nome_Munic?pio')) %>% 
+  separate('C?digo Munic?pio Completo', into = c('idmun', 'extra'), sep = -1) %>% 
   select(-extra)
 
 popul <- ibge %>% 
-  left_join(pop, by = c('Nome_Município' = 'Mun')) %>%
+  left_join(pop, by = c('Nome_Munic?pio' = 'Mun')) %>%
   filter(!is.na(populacao)) %>%
   mutate(idmun = as.double(idmun)) %>% 
   left_join(dic, by = c('idmun' = 'codmun')) %>%
   group_by(codSaude, nome_regiao, estado) %>%
   summarise(populacao_total = sum(populacao))
 
+# Baixando dados de Maio, Junho e Julho para construÃ§Ã£o da base final
+
+
+SIH_18 <- fetch_datasus(year_start = 2018, month_start = 5, year_end = 2018, month_end = 7, information_system = "SIH-RD")
+SIH_18 <- process_sih(SIH_18)
+
+SIH_19 <- fetch_datasus(year_start = 2019, month_start = 5, year_end = 2019, month_end = 7, information_system = "SIH-RD")
+SIH_19 <- process_sih(SIH_19)
+
+SIH_20 <- fetch_datasus(year_start = 2020, month_start = 5, year_end = 2020, month_end = 7, information_system = "SIH-RD")
+SIH_20 <- process_sih(SIH_20)
+
+
+SIH_18 <- SIH_18 %>%   
+  filter(MORTE=="Sim") %>% 
+  select(MUNIC_RES, MES_CMPT, MORTE, RACA_COR, SEXO, IDADE) %>% 
+  mutate(MUNIC_RES = as.integer(MUNIC_RES)) %>% 
+  left_join(dic, by = c("MUNIC_RES" = "codmun")) %>% 
+  group_by(codSaude,MES_CMPT) %>% 
+  summarise(mortes_18 = n())
+
+SIH_19 <- SIH_19 %>%   
+  filter(MORTE=="Sim") %>% 
+  select(MUNIC_RES, MES_CMPT, MORTE, RACA_COR, SEXO, IDADE) %>% 
+  mutate(MUNIC_RES = as.integer(MUNIC_RES)) %>% 
+  left_join(dic, by = c("MUNIC_RES" = "codmun")) %>% 
+  group_by(codSaude,MES_CMPT) %>% 
+  summarise(mortes_19 = n())
+
+SIH_20 <- SIH_20 %>%   
+  filter(MORTE=="Sim") %>% 
+  select(MUNIC_RES, MES_CMPT, MORTE, RACA_COR, SEXO, IDADE) %>% 
+  mutate(MUNIC_RES = as.integer(MUNIC_RES)) %>% 
+  left_join(dic, by = c("MUNIC_RES" = "codmun")) %>% 
+  group_by(codSaude,MES_CMPT) %>% 
+  summarise(mortes_20 = n())
+
+excesso_f <- SIH_18 %>% 
+  left_join(SIH_19, by = c("codSaude" = "codSaude")) %>% 
+  left_join(SIH_20, by = c("codSaude" = "codSaude")) %>% 
+  mutate(excesso_mortes = mortes_20 / ((mortes_18 + mortes_19)/2))
