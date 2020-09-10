@@ -2,12 +2,14 @@
 
 #Pacotes utilizados
 
+rm(list=ls())
+
 library(dplyr)
 library(tidyverse)
 library(microdatasus)
 library(skimr)
 library(readxl)
-
+library(lubridate)
 
 #Aprendendo a usar a base dataSUS
 
@@ -236,3 +238,53 @@ excesso_f <- mort_reg_18 %>%
                                 "MES_CMPT" = "MES_CMPT")) %>% 
   mutate(excesso_mortes = mortes_20 / 
            ((mortes_18 + mortes_19)/2))
+
+
+#Organizando dados do PIB
+
+getwd()
+setwd("C:\\Users\\arthu\\Desktop\\6o Semestre\\InsperData\\COVID\\DiffDiff")
+
+base_PIB <- read_excel("PIB_2010_2017.xlsx")
+
+base_casos_obitos <- read_excel("casos_obitos.xlsx", col_types = c("text", "text", "text", "numeric", "numeric", "numeric", "text", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "text", "text", "numeric"))
+
+###
+
+colnames(base_PIB)
+
+base_PIB <- base_PIB %>% 
+  rename(codigo_microrregiao = "Código da Microrregião")
+
+base_PIB <- base_PIB %>% 
+  rename(codigo_estado = "Código da Grande Região") %>% 
+  rename(estado = "Nome da Grande Região") %>% 
+  rename(codigo_UF = "Código da Unidade da Federação") %>% 
+  rename(UF = "Sigla da Unidade da Federação") %>% 
+  rename(nome_UF = "Nome da Unidade da Federação") %>% 
+  rename(codigo_municipio = "Código do Município") %>% 
+  rename(nome_municipio = "Nome do Município") %>% 
+  rename(regiao_metropolitana = "Região Metropolitana") %>% 
+  rename(codigo_mesorregiao = "Código da Mesorregião") %>% 
+  rename(nome_mesorregiao = "Nome da Mesorregião") %>% 
+  rename(nome_microrregiao =  "Nome da Microrregião") %>% 
+  rename(PIB_per_capita = "Produto Interno Bruto per capita, \r\na preços correntes\r\n(R$ 1,00)")
+
+PIB <- base_PIB %>% 
+  group_by(Ano, codigo_microrregiao) %>%
+  summarise(PIB = mean(PIB_per_capita))
+
+colnames(base_casos_obitos)
+
+base_casos_obitos <- base_casos_obitos %>% 
+  rename(codigo_microrregiao = codRegiaoSaude) %>% 
+  rename(nome_municipio = municipio)
+
+casos_obitos <- base_casos_obitos %>% 
+  mutate(data = as_date(data)) %>% 
+  separate(data, into = c("ano", "mes", "dia", sep = "-"))
+
+casos_obitos <- casos_obitos %>% 
+  group_by(casos_obitos$codigo_microrregiao, casos_obitos$mes) %>% 
+  summarise(casos_acumulados = sum(casosAcumulado))
+
