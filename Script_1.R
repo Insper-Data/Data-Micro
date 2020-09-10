@@ -125,6 +125,11 @@ covid_m_rs <- covid_mensal %>%
   group_by(codRegiaoSaude, data) %>% 
   summarise(Casos_Acumulados = sum(casosAcumulado))
 
+municipios <- covid_mensal %>% 
+  group_by(codmun) %>% 
+  summarise(municipio = municipio) %>% 
+  unique()
+
 dic <- covid_mensal %>% 
   group_by(codmun) %>% 
   summarise(codSaude = mean(codRegiaoSaude),
@@ -162,16 +167,10 @@ pop <- read_excel('ESTIMA_PO.2019-2019.xls', col_names = c('cod', 'Mun', 'popula
   select(-cod) %>% 
   filter(Mun != 'Munic?pios')
 
-ibge <- read_excel('RELATORIO_DTB_BRASIL_MUNICIPIO.XLS', col_types = 'text') %>%  
-  select(c('C?digo Munic?pio Completo', 'Nome_Munic?pio')) %>% 
-  separate('C?digo Munic?pio Completo', into = c('idmun', 'extra'), sep = -1) %>% 
-  select(-extra)
-
-popul <- ibge %>% 
-  left_join(pop, by = c('Nome_Munic?pio' = 'Mun')) %>%
+popul <- municipios %>% 
+  left_join(pop, by = c('municipio' = 'Mun')) %>%
   filter(!is.na(populacao)) %>%
-  mutate(idmun = as.double(idmun)) %>% 
-  left_join(dic, by = c('idmun' = 'codmun')) %>%
+  left_join(dic, by = c('codmun' = 'codmun')) %>%
   group_by(codSaude, nome_regiao, estado) %>%
   summarise(populacao_total = sum(populacao))
 
@@ -180,6 +179,11 @@ popul <- ibge %>%
 covid_data <- covid_m_rs %>% 
   left_join(popul, by = c('codRegiaoSaude' = 'codSaude')) %>% 
   mutate(casos_relativos = (Casos_Acumulados / populacao_total) * 10000)
+
+covid_data %>% 
+  group_by(codRegiaoSaude) %>% 
+  summarise(sd= sd(casos_relativos)) %>% 
+  View()
 
 covid_m_rs <- covid_m_rs %>% 
   group_by(data) %>%
@@ -214,7 +218,7 @@ SIH_20 <- SIH_20 %>%
   select(MUNIC_RES, MES_CMPT, MORTE, RACA_COR, SEXO, IDADE) %>% 
   mutate(MUNIC_RES = as.integer(MUNIC_RES)) 
 
-#Adicionando o código da região de saúde
+#Adicionando o codigo da regiao de saude
 
 mort_reg_18 <- SIH_18 %>% 
   left_join(dic, by = c("MUNIC_RES" = "codmun")) %>% 
@@ -272,9 +276,11 @@ base_PIB <- base_PIB %>%
 
 PIB <- base_PIB %>% 
   group_by(Ano, codigo_microrregiao) %>%
-  summarise(PIB = mean(PIB_per_capita))
-
-colnames(base_casos_obitos)
+  summarise(PIB_p_capita = mean(PIB_per_capita)) %>% 
+  filter(Ano == 2017) %>% 
+  arrange(desc(PIB_p_capita)) %>% 
+  mutate(grupo = ntile(PIB_p_capita, 3),
+         Riqueza = ifelse(grupo == 3, 'RICA', ifelse(grupo == 2, 'MEDIA', 'POBRE')))
 
 base_casos_obitos <- base_casos_obitos %>% 
   rename(codigo_microrregiao = codRegiaoSaude) %>% 
@@ -287,4 +293,17 @@ casos_obitos <- base_casos_obitos %>%
 casos_obitos <- casos_obitos %>% 
   group_by(casos_obitos$codigo_microrregiao, casos_obitos$mes) %>% 
   summarise(casos_acumulados = sum(casosAcumulado))
+
+data <- excesso_f %>% 
+  select(MES_CMPT, codSaude, excesso_mortes) %>%
+  left_join(PIB, by = c('codSaude' = 'codigo_microrregiao')) %>% 
+  filter(!is.na(PIB_p_capita)) %>% 
+  select(-c(Ano, grupo)) %>% 
+  mutate(MES_CMPT = as.character(MES_CMPT))
+
+
+lm(excesso_mortes ~ Riqueza + MES_CMPT, data = data)
+
+
+
 
