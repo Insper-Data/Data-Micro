@@ -299,7 +299,20 @@ data <- excesso_f %>%
   left_join(PIB, by = c('codSaude' = 'codigo_microrregiao')) %>% 
   filter(!is.na(PIB_p_capita)) %>% 
   select(-c(Ano, grupo)) %>% 
-  mutate(MES_CMPT = as.character(MES_CMPT))
+  mutate(MES_CMPT = as.character(MES_CMPT)) %>% 
+  mutate(treat_pobre = 0) %>%
+  mutate(treat_media = 0) %>%
+  mutate(treat_rica = 0) %>% 
+  mutate(pre_2018 = 0) %>% 
+  mutate(pre_2019 = 0) %>% 
+  mutate(post_2020 = 0)
+
+data$treat_pobre = ifelse(data$Riqueza == "POBRE", 1, 0 )
+data$treat_media = ifelse(data$Riqueza == "MEDIA", 1, 0 )
+data$treat_rica = ifelse(data$Riqueza == "RICA", 1, 0 )
+
+data <- data %>% 
+  arrange(desc(treat_pobre))
 
 
 lm(excesso_mortes ~ Riqueza + MES_CMPT, data = data)
