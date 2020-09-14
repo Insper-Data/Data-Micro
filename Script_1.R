@@ -237,5 +237,39 @@ data <- data %>%
 lm(excesso_mortes ~ Riqueza + codSaude, data = data)
 
 
+## Dados demográficos populacionais
 
+age <- read.csv('POPBR12.CSV')
 
+poptotal <- age %>% 
+  group_by(MUNIC_RES) %>% 
+  summarise(TOTAL = sum(POPULACAO))
+
+mais65 <- age %>%
+  separate(FXETARIA, into = c('min', 'max'), sep = -2) %>% 
+  filter(min >= 65,
+         min != 7,
+         min != 8,
+         min != 9) %>% 
+  unite(faixa, min, max, sep = "-") %>% 
+  group_by(MUNIC_RES) %>% 
+  summarise(POPULACAO = sum(POPULACAO)) %>% 
+  left_join(poptotal, by = c('MUNIC_RES' = 'MUNIC_RES')) %>%
+  left_join(dic, by = c('MUNIC_RES' = 'codmun')) %>% 
+  group_by(codSaude) %>%
+  summarise(POPULACAO = sum(POPULACAO),
+            TOTAL = sum(TOTAL)) %>% 
+  filter(!is.na(codSaude)) %>% 
+  mutate(mais65 = POPULACAO/TOTAL)
+
+COVID <- excesso_f %>% 
+  select(MES_CMPT, codSaude, excesso_mortes) %>%
+  left_join(PIB, by = c('codSaude' = 'codigo_microrregiao')) %>% 
+  filter(!is.na(PIB_p_capita)) %>% 
+  select(-c(Ano, grupo)) %>% 
+  left_join(popul, by = c('codSaude' = 'codSaude')) %>% 
+  left_join(mais65, by = c('codSaude' = 'codSaude')) %>% 
+  mutate(MES_CMPT = as.character(MES_CMPT),
+         codSaude = as.character(codSaude))
+
+lm(excesso_mortes ~ Riqueza + populacao_total + mais65 + codSaude, data = COVID)
