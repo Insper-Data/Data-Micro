@@ -212,6 +212,8 @@ casos_obitos <- casos_obitos %>%
   group_by(casos_obitos$codigo_microrregiao, casos_obitos$mes) %>% 
   summarise(casos_acumulados = sum(casosAcumulado))
 
+### Primeiro teste envolvendo regressão
+
 data <- excesso_f %>% 
   select(MES_CMPT, codSaude, excesso_mortes) %>%
   left_join(PIB, by = c('codSaude' = 'codigo_microrregiao')) %>% 
@@ -261,6 +263,9 @@ mais65 <- age %>%
             TOTAL = sum(TOTAL)) %>% 
   filter(!is.na(codSaude)) %>% 
   mutate(mais65 = POPULACAO/TOTAL)
+
+
+# Base de dados final 
 
 COVID <- excesso_f %>% 
   select(MES_CMPT, codSaude, excesso_mortes) %>%
