@@ -290,3 +290,123 @@ COVID <- excesso_f %>%
          codSaude = as.character(codSaude))
 
 lm(excesso_mortes ~ Riqueza + populacao_total + mais65 + codSaude, data = COVID)
+
+
+#
+#
+#
+#
+#
+#
+#
+#### Projeto Insper Data - Duque
+
+rm(list = ls())
+
+# Selecione o dirtorio a ser utilizado
+
+setwd("C:/Users/Pedro Saboia/Desktop/Insper Data")
+
+# Pacotes utilizados
+
+library(dplyr)
+library(tidyverse)
+library(microdatasus)
+library(skimr)
+library(readxl)
+library(lubridate)
+
+#===========================================================================================
+## Dados referentes ao PIB Muncipal 
+#===========================================================================================
+
+# Base de dados com o PIB Municipal
+
+base_PIB <- read_excel("PIB_2010_2017.xlsx")%>% 
+  rename(codigo_regiao = "Código da Grande Região", 
+         regiao = "Nome da Grande Região",
+         codigo_UF = "Código da Unidade da Federação",
+         UF = "Sigla da Unidade da Federação",
+         nome_UF = "Nome da Unidade da Federação",
+         codigo_municipio = "Código do Município",
+         nome_municipio = "Nome do Município",
+         regiao_metropolitana = "Região Metropolitana",
+         codigo_mesorregiao = "Código da Mesorregião",
+         nome_mesorregiao = "Nome da Mesorregião",
+         codigo_microrregiao = "Código da Microrregião",
+         nome_microrregiao =  "Nome da Microrregião",
+         PIB = "Produto Interno Bruto, \r\na preços correntes\r\n(R$ 1.000)") %>%
+  filter(Ano == 2017) %>% 
+  select(regiao, UF, 
+         nome_municipio, 
+         nome_mesorregiao,
+         nome_microrregiao, 
+         PIB)
+
+
+#===========================================================================================
+## Dados referentes a contaminação por COVID-19
+#===========================================================================================
+
+# Base de dados bruta -> Última atualização: 31/ago/2020
+
+covid_bruto <- read_excel('HIST_PAINEL_COVIDBR_31ago2020_1.xlsx',
+                          col_types = c('text', 'text', 'text','numeric','numeric','numeric',
+                                        'text', 'date','numeric','numeric','numeric','numeric',
+                                        'numeric','numeric','numeric','numeric','logical'))
+
+# Pegar apenas os dados referentes ao final de cada mês
+
+covid_mensal <- covid_bruto %>%
+  filter(codmun != 0, 
+         codRegiaoSaude != 0,
+         data == as.Date("2020-03-31")|
+           data == as.Date("2020-04-30")|
+           data == as.Date("2020-05-31")|
+           data == as.Date("2020-06-30")|
+           data == as.Date("2020-07-31")|
+           data == as.Date("2020-08-31")) %>% 
+  select(codmun, municipio, data, populacaoTCU2019,
+         casosAcumulado, `interior/metropolitana`) %>% 
+  rename(populacao = populacaoTCU2019,
+         metropolitana = `interior/metropolitana`) %>% 
+  separate(data, into = c('ano', 'mes', 'dia'), sep = "-") %>% 
+  separate(mes, into = c('zero', 'mes'), sep = 1) %>%
+  select(-c(ano, dia, zero)) 
+
+
+# Com essa base temos a populacao, o municipio, e indicador de zona urbana.   
+
+#===========================================================================================
+## Juntando todos os dados em uma base
+#===========================================================================================
+
+# Juntando as bases em uma, para fazer as regressões
+
+COVID <- covid_mensal %>% 
+  left_join(base_PIB, by = c('municipio' = 'nome_municipio')) %>%  
+  group_by(nome_microrregiao, mes) %>% 
+  summarise(populacao = sum(populacao),
+            casosAcumulado = sum(casosAcumulado),
+            PIB = sum(PIB),
+            regiao = regiao,
+            metropolitana = mean(metropolitana),
+            UF = UF,
+            mesorregiao = nome_mesorregiao) %>% 
+  unique() %>% 
+  mutate(casos_relativos = casosAcumulado / populacao,
+         PIB_per_capita = PIB / populacao,
+         ua = ifelse(metropolitana > 0.5, TRUE, FALSE)) %>% 
+  group_by(nome_microrregiao) %>% 
+  summarise(volatilidade = sd(casos_relativos),
+            PIB_per_capita = PIB_per_capita,
+            regiao = regiao,
+            ua = ua,
+            UF = UF,
+            mesorregiao = mesorregiao,
+            populacao = populacao) %>% 
+  unique() %>% 
+  arrange(desc(PIB_per_capita)) %>% 
+  mutate(grupo = ntile(PIB_per_capita, 3),
+         Riqueza = ifelse(grupo == 3, 'RICA', ifelse(grupo == 2, 'MEDIA', 'POBRE'))) %>% 
+  select(-grupo)
