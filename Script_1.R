@@ -112,8 +112,8 @@ SIH_20 <- process_sih(SIH_20)
 
 SIH_18 <- SIH_18 %>%   
   filter(MORTE=="Sim") %>% 
-  select(MUNIC_RES, MES_CMPT, MORTE, RACA_COR, SEXO, IDADE) %>% 
-  mutate(MUNIC_RES = as.integer(MUNIC_RES)) 
+  select(MUNIC_RES, MES_CMPT, MORTE, DIAG_PRINC, RACA_COR, SEXO, IDADE) %>% 
+  mutate(MUNIC_RES = as.integer(MUNIC_RES))
 
 SIH_19 <- SIH_19 %>%   
   filter(MORTE=="Sim") %>% 
@@ -122,10 +122,22 @@ SIH_19 <- SIH_19 %>%
 
 SIH_20 <- SIH_20 %>%   
   filter(MORTE=="Sim") %>% 
-  select(MUNIC_RES, MES_CMPT, MORTE, RACA_COR, SEXO, IDADE) %>% 
-  mutate(MUNIC_RES = as.integer(MUNIC_RES)) 
+  select(MUNIC_RES, MES_CMPT, MORTE, DIAG_PRINC, RACA_COR, SEXO, IDADE) %>% 
+  mutate(MUNIC_RES = as.integer(MUNIC_RES))
 
+dic_doencas <- read_excel("~/Downloads/CID-10-SUBCATEGORIAS.xls")
+dic_doencas <- dic_doencas %>% 
+  mutate(codigo_doenca = SUBCAT,
+         descricao = DESCRICAO) %>% 
+  select(codigo_doenca, descricao)
 
+SIH_20 %>% 
+  group_by(DIAG_PRINC) %>% 
+  summarise(total = n()) %>% 
+  arrange(desc(total)) %>% 
+  head(15) %>% 
+  ggplot(aes(x = DIAG_PRINC, y = total)) +
+  geom_col(aes(fill = DIAG_PRINC))
 
 #Adicionando o codigo da regiao de saude
 
@@ -176,21 +188,21 @@ base_casos_obitos <- read_excel("casos_obitos.xlsx", col_types = c("text", "text
 colnames(base_PIB)
 
 base_PIB <- base_PIB %>% 
-  rename(codigo_microrregiao = "Código da Microrregião")
+  rename(codigo_microrregiao = "C?digo da Microrregi?o")
 
 base_PIB <- base_PIB %>% 
-  rename(codigo_estado = "Código da Grande Região") %>% 
-  rename(estado = "Nome da Grande Região") %>% 
-  rename(codigo_UF = "Código da Unidade da Federação") %>% 
-  rename(UF = "Sigla da Unidade da Federação") %>% 
-  rename(nome_UF = "Nome da Unidade da Federação") %>% 
-  rename(codigo_municipio = "Código do Município") %>% 
-  rename(nome_municipio = "Nome do Município") %>% 
-  rename(regiao_metropolitana = "Região Metropolitana") %>% 
-  rename(codigo_mesorregiao = "Código da Mesorregião") %>% 
-  rename(nome_mesorregiao = "Nome da Mesorregião") %>% 
-  rename(nome_microrregiao =  "Nome da Microrregião") %>% 
-  rename(PIB_per_capita = "Produto Interno Bruto per capita, \r\na preços correntes\r\n(R$ 1,00)")
+  rename(codigo_estado = "C?digo da Grande Regi?o") %>% 
+  rename(estado = "Nome da Grande Regi?o") %>% 
+  rename(codigo_UF = "C?digo da Unidade da Federa??o") %>% 
+  rename(UF = "Sigla da Unidade da Federa??o") %>% 
+  rename(nome_UF = "Nome da Unidade da Federa??o") %>% 
+  rename(codigo_municipio = "C?digo do Munic?pio") %>% 
+  rename(nome_municipio = "Nome do Munic?pio") %>% 
+  rename(regiao_metropolitana = "Regi?o Metropolitana") %>% 
+  rename(codigo_mesorregiao = "C?digo da Mesorregi?o") %>% 
+  rename(nome_mesorregiao = "Nome da Mesorregi?o") %>% 
+  rename(nome_microrregiao =  "Nome da Microrregi?o") %>% 
+  rename(PIB_per_capita = "Produto Interno Bruto per capita, \r\na pre?os correntes\r\n(R$ 1,00)")
 
 PIB <- base_PIB %>% 
   group_by(Ano, codigo_microrregiao) %>%
@@ -212,7 +224,7 @@ casos_obitos <- casos_obitos %>%
   group_by(casos_obitos$codigo_microrregiao, casos_obitos$mes) %>% 
   summarise(casos_acumulados = sum(casosAcumulado))
 
-### Primeiro teste envolvendo regressão
+### Primeiro teste envolvendo regress?o
 
 data <- excesso_f %>% 
   select(MES_CMPT, codSaude, excesso_mortes) %>%
@@ -239,7 +251,7 @@ data <- data %>%
 lm(excesso_mortes ~ Riqueza + codSaude, data = data)
 
 
-## Dados demográficos populacionais
+## Dados demogr?ficos populacionais
 
 age <- read.csv('POPBR12.CSV')
 
