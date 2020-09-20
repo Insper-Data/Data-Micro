@@ -315,6 +315,7 @@ library(microdatasus)
 library(skimr)
 library(readxl)
 library(lubridate)
+library(fabricatr)
 
 #===========================================================================================
 ## Dados referentes ao PIB Muncipal 
@@ -378,6 +379,26 @@ covid_mensal <- covid_bruto %>%
 # Com essa base temos a populacao, o municipio, e indicador de zona urbana.   
 
 #===========================================================================================
+## Dados sobre mortalidade
+#===========================================================================================
+
+
+mortes <- obitos %>%
+  mutate(MES_CMPT = as.character(MES_CMPT)) %>% 
+  left_join(covid_mensal, by = c('MUNIC_RES' = 'codmun', 'MES_CMPT' = 'mes')) %>% 
+  left_join(base_PIB, by = c('municipio' = 'nome_municipio')) %>% 
+  group_by(MES_CMPT, nome_microrregiao) %>%
+  filter(!is.na(mortes_18),
+         !is.na(mortes_19),
+         !is.na(mortes_20)) %>% 
+  summarise(mortes_18 = sum(mortes_18),
+            mortes_19 = sum(mortes_19),
+            mortes_20 = sum(mortes_20)) %>% 
+  mutate(excesso = (mortes_20) / ( (mortes_18 + mortes_19) / 2 ) ) %>% 
+  select(-c(mortes_18:mortes_20))
+
+
+#===========================================================================================
 ## Juntando todos os dados em uma base
 #===========================================================================================
 
@@ -405,8 +426,17 @@ COVID <- covid_mensal %>%
             UF = UF,
             mesorregiao = mesorregiao,
             populacao = populacao) %>% 
-  unique() %>% 
-  arrange(desc(PIB_per_capita)) %>% 
-  mutate(grupo = ntile(PIB_per_capita, 3),
-         Riqueza = ifelse(grupo == 3, 'RICA', ifelse(grupo == 2, 'MEDIA', 'POBRE'))) %>% 
-  select(-grupo)
+  unique() %>%
+  filter(!is.na(nome_microrregiao),
+         !is.na(PIB_per_capita)) %>%
+  arrange(desc(PIB_per_capita)) %>%
+  mutate(wealth = ifelse(PIB_per_capita >= 27.364441, 'RICO',
+                         ifelse(PIB_per_capita >= 14.771092, 'MEDIO', 'POBRE'))) %>% 
+  right_join(mortes, by = c('nome_microrregiao' = 'nome_microrregiao')) %>% 
+  filter(MES_CMPT == 7)
+
+#===========================================================================================
+## Regressão
+#===========================================================================================
+
+lm(excesso ~ wealth + ua + regiao + populacao, data = COVID)
