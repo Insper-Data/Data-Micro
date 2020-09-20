@@ -268,14 +268,16 @@ mais65 <- age %>%
   unite(faixa, min, max, sep = "-") %>% 
   group_by(MUNIC_RES) %>% 
   summarise(POPULACAO = sum(POPULACAO)) %>% 
-  left_join(poptotal, by = c('MUNIC_RES' = 'MUNIC_RES')) %>%
-  left_join(dic, by = c('MUNIC_RES' = 'codmun')) %>% 
-  group_by(codSaude) %>%
+  left_join(poptotal, by = c('MUNIC_RES' = 'MUNIC_RES'))%>% 
+  left_join(covid_mensal, by = c('MUNIC_RES' = 'codmun')) %>% 
+  select(c(POPULACAO:municipio)) %>% 
+  left_join(base_PIB, by = c('municipio' = 'nome_municipio')) %>% 
+  unique() %>% 
+  group_by(nome_microrregiao) %>% 
   summarise(POPULACAO = sum(POPULACAO),
             TOTAL = sum(TOTAL)) %>% 
-  filter(!is.na(codSaude)) %>% 
-  mutate(mais65 = POPULACAO/TOTAL)
-
+  mutate(mais65 = POPULACAO / TOTAL) %>% 
+  select(-c(POPULACAO:TOTAL))
 
 # Base de dados final 
 
@@ -379,6 +381,37 @@ covid_mensal <- covid_bruto %>%
 # Com essa base temos a populacao, o municipio, e indicador de zona urbana.   
 
 #===========================================================================================
+## População mais de 65 anos
+#===========================================================================================
+
+age <- read.csv('POPBR12.CSV')
+
+poptotal <- age %>% 
+  group_by(MUNIC_RES) %>% 
+  summarise(TOTAL = sum(POPULACAO))
+
+mais65 <- age %>%
+  separate(FXETARIA, into = c('min', 'max'), sep = -2) %>% 
+  filter(min >= 65,
+         min != 7,
+         min != 8,
+         min != 9) %>% 
+  unite(faixa, min, max, sep = "-") %>% 
+  group_by(MUNIC_RES) %>% 
+  summarise(POPULACAO = sum(POPULACAO)) %>% 
+  left_join(poptotal, by = c('MUNIC_RES' = 'MUNIC_RES'))%>% 
+  left_join(covid_mensal, by = c('MUNIC_RES' = 'codmun')) %>% 
+  select(c(POPULACAO:municipio)) %>% 
+  left_join(base_PIB, by = c('municipio' = 'nome_municipio')) %>% 
+  unique() %>% 
+  group_by(nome_microrregiao) %>% 
+  summarise(POPULACAO = sum(POPULACAO),
+            TOTAL = sum(TOTAL)) %>% 
+  mutate(mais65 = POPULACAO / TOTAL) %>% 
+  select(-c(POPULACAO:TOTAL))
+
+
+#===========================================================================================
 ## Dados sobre mortalidade
 #===========================================================================================
 
@@ -433,10 +466,11 @@ COVID <- covid_mensal %>%
   mutate(wealth = ifelse(PIB_per_capita >= 27.364441, 'RICO',
                          ifelse(PIB_per_capita >= 14.771092, 'MEDIO', 'POBRE'))) %>% 
   right_join(mortes, by = c('nome_microrregiao' = 'nome_microrregiao')) %>% 
+  left_join(mais65, by = c('nome_microrregiao' = 'nome_microrregiao')) %>% 
   filter(MES_CMPT == 7)
 
 #===========================================================================================
 ## Regressão
 #===========================================================================================
 
-lm(excesso ~ wealth + ua + regiao + populacao, data = COVID)
+lm(excesso ~ wealth + ua + + mais65 + regiao + populacao, data = COVID)
