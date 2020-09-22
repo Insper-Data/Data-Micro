@@ -33,10 +33,10 @@ setwd("C:/Users/Pedro Saboia/Desktop/Insper Data")
 
 # Buscando os dados referentes a COVID-19
 
-covid_bruto <- read_excel('HIST_PAINEL_COVIDBR_31ago2020_1.xlsx',
-                          col_types = c('text', 'text', 'text','numeric','numeric','numeric',
-                                        'text', 'date','numeric','numeric','numeric','numeric',
-                                        'numeric','numeric','numeric','numeric','logical'))
+covid_bruto <- read_excel("~/Desktop/Insper Data/HIST_PAINEL_COVIDBR_31ago2020_1.xlsx",col_types = c("text", 
+                                        "text", "text","numeric","numeric","numeric",
+                                        "text", "date","numeric","numeric","numeric","numeric",
+                                        "numeric","numeric","numeric","numeric","logical"))
 
 
 covid_mensal <- covid_bruto %>%
@@ -325,20 +325,20 @@ library(fabricatr)
 
 # Base de dados com o PIB Municipal
 
-base_PIB <- read_excel("PIB_2010_2017.xlsx")%>% 
-  rename(codigo_regiao = "Código da Grande Região", 
-         regiao = "Nome da Grande Região",
-         codigo_UF = "Código da Unidade da Federação",
-         UF = "Sigla da Unidade da Federação",
-         nome_UF = "Nome da Unidade da Federação",
-         codigo_municipio = "Código do Município",
-         nome_municipio = "Nome do Município",
-         regiao_metropolitana = "Região Metropolitana",
-         codigo_mesorregiao = "Código da Mesorregião",
-         nome_mesorregiao = "Nome da Mesorregião",
-         codigo_microrregiao = "Código da Microrregião",
-         nome_microrregiao =  "Nome da Microrregião",
-         PIB = "Produto Interno Bruto, \r\na preços correntes\r\n(R$ 1.000)") %>%
+base_PIB <- read_excel("~/Downloads/PIB dos MunicÂ°pios - base de dados 2010-2017.xls") %>% 
+  rename(codigo_regiao = "CÃ³digo da Grande RegiÃ£o", 
+         regiao = "Nome da Grande RegiÃ£o",
+         codigo_UF = "CÃ³digo da Unidade da FederaÃ§Ã£o",
+         UF = "Sigla da Unidade da FederaÃ§Ã£o",
+         nome_UF = "Nome da Unidade da FederaÃ§Ã£o",
+         codigo_municipio = "CÃ³digo do MunicÃ­pio",
+         nome_municipio = "Nome do MunicÃ­pio",
+         regiao_metropolitana = "RegiÃ£o Metropolitana",
+         codigo_mesorregiao = "CÃ³digo da MesorregiÃ£o",
+         nome_mesorregiao = "Nome da MesorregiÃ£o",
+         codigo_microrregiao = "CÃ³digo da MicrorregiÃ£o",
+         nome_microrregiao =  "Nome da MicrorregiÃ£o",
+         PIB = "Produto Interno Bruto, a preÃ§os correntes (R$ 1.000)") %>%
   filter(Ano == 2017) %>% 
   select(regiao, UF, 
          nome_municipio, 
@@ -348,17 +348,17 @@ base_PIB <- read_excel("PIB_2010_2017.xlsx")%>%
 
 
 #===========================================================================================
-## Dados referentes a contaminação por COVID-19
+## Dados referentes a contamina??o por COVID-19
 #===========================================================================================
 
-# Base de dados bruta -> Última atualização: 31/ago/2020
+# Base de dados bruta -> ?ltima atualiza??o: 31/ago/2020
 
-covid_bruto <- read_excel('HIST_PAINEL_COVIDBR_31ago2020_1.xlsx',
+covid_bruto <- read_excel("~/Desktop/Insper Data/HIST_PAINEL_COVIDBR_31ago2020_1.xlsx",
                           col_types = c('text', 'text', 'text','numeric','numeric','numeric',
                                         'text', 'date','numeric','numeric','numeric','numeric',
                                         'numeric','numeric','numeric','numeric','logical'))
 
-# Pegar apenas os dados referentes ao final de cada mês
+# Pegar apenas os dados referentes ao final de cada m?s
 
 covid_mensal <- covid_bruto %>%
   filter(codmun != 0, 
@@ -381,10 +381,10 @@ covid_mensal <- covid_bruto %>%
 # Com essa base temos a populacao, o municipio, e indicador de zona urbana.   
 
 #===========================================================================================
-## População mais de 65 anos
+## Popula??o mais de 65 anos
 #===========================================================================================
 
-age <- read.csv('POPBR12.CSV')
+age <- read_csv("~/Downloads/POPBR12.csv")
 
 poptotal <- age %>% 
   group_by(MUNIC_RES) %>% 
@@ -435,7 +435,7 @@ mortes <- obitos %>%
 ## Juntando todos os dados em uma base
 #===========================================================================================
 
-# Juntando as bases em uma, para fazer as regressões
+# Juntando as bases em uma, para fazer as regress?es
 
 COVID <- covid_mensal %>% 
   left_join(base_PIB, by = c('municipio' = 'nome_municipio')) %>%  
@@ -469,8 +469,30 @@ COVID <- covid_mensal %>%
   left_join(mais65, by = c('nome_microrregiao' = 'nome_microrregiao')) %>% 
   filter(MES_CMPT == 7)
 
+
+Acum <- covid_mensal %>% left_join(base_PIB,by = c('municipio' = 'nome_municipio')) %>% 
+  select(nome_microrregiao, codmun, mes, casosAcumulado) %>% 
+  filter(mes == 7) %>% 
+  group_by(nome_microrregiao) %>% 
+  summarise(casosAcumulado = sum(casosAcumulado))
+
+median(COVID_test$casos_per_capita, na.rm = TRUE)
+median(COVID$volatilidade, na.rm = TRUE)
+
+COVID_test <- COVID %>% 
+  filter(!is.na(nome_microrregiao)) %>% 
+  left_join(Acum, by = c("nome_microrregiao" = "nome_microrregiao")) %>% 
+  mutate(casos_per_capita = (casosAcumulado / populacao),
+         infec1 = ifelse(volatilidade >= 0.006036, "ALTA", "BAIXA"),
+         infec2 = ifelse(casos_per_capita >= 0.009373, "ALTA", "BAIXA"))
+
+
 #===========================================================================================
-## Regressão
+## Regress?o
 #===========================================================================================
 
-lm(excesso ~ wealth + ua + + mais65 + regiao + populacao, data = COVID)
+lm(excesso ~ wealth + ua + mais65 + regiao + populacao, data = COVID)
+
+lm(excesso ~ wealth + infec1 + ua + mais65 + regiao + populacao, data = COVID_test)
+
+lm(excesso ~ wealth + infec2 + ua + mais65 + regiao + populacao, data = COVID_test)
