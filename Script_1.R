@@ -496,3 +496,13 @@ lm(excesso ~ wealth + ua + mais65 + regiao + populacao, data = COVID)
 lm(excesso ~ wealth + infec1 + ua + mais65 + regiao + populacao, data = COVID_test)
 
 lm(excesso ~ wealth + infec2 + ua + mais65 + regiao + populacao, data = COVID_test)
+
+lm(excesso ~ wealth + infec1 + ua + regiao + populacao, data = COVID_test)
+
+lm <- lm(excesso ~ wealth + infec1 + ua + regiao + populacao, data = COVID_test)
+lm2 <- lm(excesso ~ wealth + infec2 + ua + regiao + populacao, data = COVID_test)
+lm3 <- lm(excesso ~ wealth + infec2 + ua + mais65 + regiao + populacao, data = COVID_test)
+lm4 <- lm(excesso ~ wealth + infec1 + infec1*wealth + ua + mais65 + regiao + populacao, data = COVID_test)
+
+summary(lm(excesso ~ wealth + infec1 + ua + mais65 + regiao + populacao, data = COVID_test))
+
