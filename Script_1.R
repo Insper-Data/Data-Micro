@@ -100,15 +100,36 @@ covid_m_rs <- covid_m_rs %>%
 ## Baixando dados de Maio, Junho e Julho para construcao da base final
 
 
-SIH_18 <- fetch_datasus(year_start = 2018, month_start = 5, year_end = 2018, month_end = 7, information_system = "SIH-RD")
+SIH_18 <- fetch_datasus(year_start = 2018, month_start = 1, year_end = 2018, month_end = 8, information_system = "SIH-RD")
 SIH_18 <- process_sih(SIH_18)
 
-SIH_19 <- fetch_datasus(year_start = 2019, month_start = 5, year_end = 2019, month_end = 7, information_system = "SIH-RD")
+SIH_19 <- fetch_datasus(year_start = 2019, month_start = 1, year_end = 2019, month_end = 8, information_system = "SIH-RD")
 SIH_19 <- process_sih(SIH_19)
 
-SIH_20 <- fetch_datasus(year_start = 2020, month_start = 5, year_end = 2020, month_end = 7, information_system = "SIH-RD")
+SIH_20 <- fetch_datasus(year_start = 2020, month_start = 1, year_end = 2020, month_end = 8, information_system = "SIH-RD")
 SIH_20 <- process_sih(SIH_20)
 
+SIH_18 <- SIH_18 %>%   
+  filter(MORTE=="Sim") %>% 
+  select(MUNIC_RES, MES_CMPT, MORTE, RACA_COR, SEXO, IDADE) %>% 
+  mutate(MUNIC_RES = as.integer(MUNIC_RES)) %>% 
+  group_by(MES_CMPT, MUNIC_RES) %>% 
+  summarise(mortes_18 = n())
+
+
+SIH_19 <- SIH_19 %>%   
+  filter(MORTE=="Sim") %>% 
+  select(MUNIC_RES, MES_CMPT, MORTE, RACA_COR, SEXO, IDADE) %>% 
+  mutate(MUNIC_RES = as.integer(MUNIC_RES)) %>% 
+  group_by(MES_CMPT, MUNIC_RES) %>% 
+  summarise(mortes_19 = n())
+
+SIH_20 <- SIH_20 %>%   
+  filter(MORTE=="Sim") %>% 
+  select(MUNIC_RES, MES_CMPT, MORTE, RACA_COR, SEXO, IDADE) %>% 
+  mutate(MUNIC_RES = as.integer(MUNIC_RES)) %>% 
+  group_by(MES_CMPT, MUNIC_RES) %>% 
+  summarise(mortes_20 = n())
 
 SIH_18 <- SIH_18 %>%   
   filter(MORTE=="Sim") %>% 
@@ -348,7 +369,7 @@ base_PIB <- read_excel("~/Downloads/PIB dos Munic°pios - base de dados 2010-201
 
 
 #===========================================================================================
-## Dados referentes a contamina??o por COVID-19
+## Dados referentes a contaminacao por COVID-19
 #===========================================================================================
 
 # Base de dados bruta -> ?ltima atualiza??o: 31/ago/2020
@@ -358,7 +379,7 @@ covid_bruto <- read_excel("~/Desktop/Insper Data/HIST_PAINEL_COVIDBR_31ago2020_1
                                         'text', 'date','numeric','numeric','numeric','numeric',
                                         'numeric','numeric','numeric','numeric','logical'))
 
-# Pegar apenas os dados referentes ao final de cada m?s
+# Pegar apenas os dados referentes ao final de cada mes
 
 covid_mensal <- covid_bruto %>%
   filter(codmun != 0, 
@@ -381,7 +402,7 @@ covid_mensal <- covid_bruto %>%
 # Com essa base temos a populacao, o municipio, e indicador de zona urbana.   
 
 #===========================================================================================
-## Popula??o mais de 65 anos
+## Populacao mais de 65 anos
 #===========================================================================================
 
 age <- read_csv("~/Downloads/POPBR12.csv")
@@ -488,7 +509,7 @@ COVID_test <- COVID %>%
 
 
 #===========================================================================================
-## Regress?o
+## Regressao
 #===========================================================================================
 
 lm(excesso ~ wealth + ua + mais65 + regiao + populacao, data = COVID)
