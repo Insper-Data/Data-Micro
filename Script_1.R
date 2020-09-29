@@ -131,6 +131,12 @@ SIH_20 <- SIH_20 %>%
   group_by(MES_CMPT, MUNIC_RES) %>% 
   summarise(mortes_20 = n())
 
+obitos <- SIH_18 %>% 
+  left_join(SIH_19, by = c('MES_CMPT' = 'MES_CMPT', 'MUNIC_RES' = 'MUNIC_RES')) %>% 
+  left_join(SIH_20, by = c('MES_CMPT' = 'MES_CMPT', 'MUNIC_RES' = 'MUNIC_RES'))
+
+#======================================================================================================================
+
 SIH_18 <- SIH_18 %>%   
   filter(MORTE=="Sim") %>% 
   select(MUNIC_RES, MES_CMPT, MORTE, DIAG_PRINC, RACA_COR, SEXO, IDADE) %>% 
