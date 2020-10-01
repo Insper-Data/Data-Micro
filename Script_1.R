@@ -150,8 +150,8 @@ SIH_20 <- SIH_20 %>%
 #===========================================================================================
 
 load("SIH_18.Rdata")
-load("SIH_18.Rdata")
-load("SIH_18.Rdata")
+load("SIH_19.Rdata")
+load("SIH_20.Rdata")
 
 ## Agrupando e preparando
 #===========================================================================================
@@ -160,10 +160,12 @@ obitos <- SIH_18 %>%
   left_join(SIH_19, by = c('MES_CMPT' = 'MES_CMPT', 'MUNIC_RES' = 'MUNIC_RES')) %>% 
   left_join(SIH_20, by = c('MES_CMPT' = 'MES_CMPT', 'MUNIC_RES' = 'MUNIC_RES')) %>% 
   filter(MES_CMPT != 8) #ainda não temos dados completos de agosto
+
 mortes <- obitos %>%
   mutate(MES_CMPT = as.character(MES_CMPT)) %>% 
-  left_join(covid_mensal, by = c('MUNIC_RES' = 'codmun', 'MES_CMPT' = 'mes')) %>% 
+  left_join(covid_mensal, by = c('MUNIC_RES' = 'codmun')) %>% 
   left_join(base_PIB, by = c('municipio' = 'nome_municipio')) %>% 
+  filter(mes == 3)%>% 
   group_by(MES_CMPT, nome_microrregiao) %>%
   filter(!is.na(mortes_18),
          !is.na(mortes_19),
@@ -237,9 +239,17 @@ COVID_test <- COVID %>%
 ## Regressao
 #===========================================================================================
 
-lm(excesso ~ wealth*MES_CMPT + ua + mais65 + regiao + populacao, data = COVID)
+summary(lm(excesso ~ wealth*MES_CMPT + ua + mais65 + regiao + populacao, data = COVID))
+
+summary(lm(excesso ~ wealth*corona + ua + mais65 + regiao + populacao, data = COVID))
 
 lm(excesso ~ wealth*infect + ua + mais65 + regiao + populacao, data = COVID)
+
+lm(excesso ~ wealth*infect*corona + ua + mais65 + regiao + populacao, data = COVID)
+
+summary(lm(excesso ~ wealth*infect*MES_CMPT + ua + mais65 + regiao + populacao, data = COVID))
+
+summary(lm(excesso ~ wealth*infect*corona + ua + mais65 + regiao + populacao, data = COVID))
 
 lm(excesso ~ wealth*infect + ua + mais65 + regiao + populacao + MES_CMPT, data = COVID)
 
@@ -253,6 +263,25 @@ lm3 <- lm(excesso ~ wealth + infec2 + ua + mais65 + regiao + populacao, data = C
 lm4 <- lm(excesso ~ wealth + infec1 + infec1*wealth + ua + mais65 + regiao + populacao, data = COVID_test)
 
 summary(lm(excesso ~ wealth + infec1 + ua + mais65 + regiao + populacao, data = COVID_test))
+
+summary(lm(excesso ~ wealth*corona + ua + mais65 + UF + populacao, data = COVID))
+
+
+COVID %>%
+  filter(!is.na(wealth)) %>%
+  group_by(wealth, MES_CMPT) %>% 
+  summarise(excesso = mean(excesso)) %>%
+  unique() %>% 
+  ggplot() + 
+    geom_line(aes(MES_CMPT, excesso, group = wealth, color = wealth), size = 2) +
+  theme_classic() +
+  ylab("Excesso de mortalidade") + 
+  xlab("Mês") + 
+  labs(color = "Nível de Renda",
+       title = "Evolução dos excesso de mortalidade em 2020",
+       subtitle = "por microrregião",
+       caption = "Fonte: MicroDataSUS e IBGE")
+      
 
 
 #===========================================================================================
