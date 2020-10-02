@@ -15,6 +15,7 @@ library(skimr)
 library(readxl)
 library(lubridate)
 library(fabricatr)
+library(broom)
 
 #===========================================================================================
 ## Dados referentes ao PIB Muncipal 
@@ -255,33 +256,65 @@ lm(excesso ~ wealth*infect + ua + mais65 + regiao + populacao + MES_CMPT, data =
 
 lm(excesso ~ wealth + infec2 + ua + mais65 + regiao + populacao, data = COVID_test)
 
-lm(excesso ~ wealth + infec1 + ua + regiao + populacao, data = COVID_test)
-
-lm <- lm(excesso ~ wealth + infec1 + ua + regiao + populacao, data = COVID_test)
-lm2 <- lm(excesso ~ wealth + infec2 + ua + regiao + populacao, data = COVID_test)
-lm3 <- lm(excesso ~ wealth + infec2 + ua + mais65 + regiao + populacao, data = COVID_test)
-lm4 <- lm(excesso ~ wealth + infec1 + infec1*wealth + ua + mais65 + regiao + populacao, data = COVID_test)
-
 summary(lm(excesso ~ wealth + infec1 + ua + mais65 + regiao + populacao, data = COVID_test))
 
 summary(lm(excesso ~ wealth*corona + ua + mais65 + UF + populacao, data = COVID))
 
 
+
+reg_1 <- (lm(excesso ~ wealth*corona + ua + mais65 + regiao + populacao, data = COVID))
+reg_1
+
+tidy_reg1 <- tidy(reg_1)
+tidy_reg1
+
+write.csv(tidy_reg1, "reg_covid_regiao.csv")
+
+reg_2 <- (lm(excesso ~ wealth*corona + ua + mais65 + UF + populacao, data = COVID))
+reg_2
+
+tidy_reg2 <- tidy(reg_2)
+tidy_reg2
+
+write.csv(tidy_reg2, "reg_covid_UF.csv")
+
+summary(lm(excesso ~ wealth*corona + ua + mais65 + UF + populacao, data = COVID)) ##
+
+summary(lm(excesso ~ wealth*infect + ua + mais65 + UF + populacao + MES_CMPT, data = COVID)) 
+
 COVID %>%
   filter(!is.na(wealth)) %>%
   group_by(wealth, MES_CMPT) %>% 
-  summarise(excesso = mean(excesso)) %>%
-  unique() %>% 
+  summarise(excesso = mean(excesso),
+            sd = sd(excesso)) %>%
+  unique() %>%
   ggplot() + 
     geom_line(aes(MES_CMPT, excesso, group = wealth, color = wealth), size = 2) +
   theme_classic() +
-  ylab("Excesso de mortalidade") + 
-  xlab("Mês") + 
+  ylab("Excesso de mortalidade relativo") + 
+  xlab("Mês") +
+  scale_colour_discrete(name = "Nível de PIB per capita", labels = c("Alto","Médio", "Baixo")) +
   labs(color = "Nível de Renda",
-       title = "Evolução dos excesso de mortalidade em 2020",
+       title = "Evolução do excesso de mortalidade em 2020",
        subtitle = "por microrregião",
        caption = "Fonte: MicroDataSUS e IBGE")
-      
+
+COVID %>%
+  filter(!is.na(wealth)) %>%
+  group_by(wealth, MES_CMPT) %>% 
+  summarise(excesso = mean(excesso)) %>% 
+  unique() %>%
+  ggplot() + 
+  geom_line(aes(MES_CMPT, excesso, group = wealth, color = wealth), size = 2) +
+  theme_classic() +
+  ylab("Excesso de mortalidade relativo") + 
+  xlab("Mês") + 
+  coord_cartesian(xlim = c(1,7), ylim = c(0,1.5))+
+  scale_colour_discrete(name = "Nível de PIB per capita", labels = c("Alto","Médio", "Baixo"))+
+  labs(title = "Evolução do excesso de mortalidade em 2020",
+       subtitle = "por microrregião",
+       caption = "Fonte: MicroDataSUS e IBGE")
+
 
 
 #===========================================================================================
