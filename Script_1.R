@@ -270,15 +270,15 @@ tidy_reg1
 
 write.csv(tidy_reg1, "reg_covid_regiao.csv")
 
-reg_2 <- (lm(excesso ~ wealth*corona + ua + mais65 + UF + populacao, data = COVID))
+reg_2 <- (lm(excesso ~ wealth*corona + ua + mais65 + UF + populacao + MES_CMPT, data = COVID))
 reg_2
 
 tidy_reg2 <- tidy(reg_2)
 tidy_reg2
 
-write.csv(tidy_reg2, "reg_covid_UF.csv")
+write.csv(tidy_reg2, "reg_covid_UF_mes.csv")
 
-summary(lm(excesso ~ wealth*corona + ua + mais65 + UF + populacao, data = COVID)) ##
+summary(lm(excesso ~ wealth + corona + ua + mais65 + UF + populacao + MES_CMPT, data = COVID)) ## 7 fica sem efeito 
 
 summary(lm(excesso ~ wealth*infect + ua + mais65 + UF + populacao + MES_CMPT, data = COVID)) 
 
