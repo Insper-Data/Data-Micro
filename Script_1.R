@@ -16,6 +16,7 @@ library(readxl)
 library(lubridate)
 library(fabricatr)
 library(broom)
+library(oaxaca)
 
 #===========================================================================================
 ## Dados referentes ao PIB Muncipal 
@@ -217,6 +218,9 @@ COVID <- covid_mensal %>%
   mutate(infect = ifelse(volatilidade >= 0.006040925, "ALTA", "BAIXA"),
          corona = ifelse(MES_CMPT > 3, TRUE, FALSE))
 
+OB <- COVID %>% 
+  mutate(rico = ifelse(wealth == "RICO", 1, 0),
+         pobre = ifelse(wealth == "POBRE", TRUE, FALSE))
 
 Acum <- covid_mensal %>% 
   left_join(base_PIB,by = c('municipio' = 'nome_municipio')) %>% 
@@ -260,7 +264,11 @@ summary(lm(excesso ~ wealth + infec1 + ua + mais65 + regiao + populacao, data = 
 
 summary(lm(excesso ~ wealth*corona + ua + mais65 + UF + populacao, data = COVID))
 
+#==================
+#OAXACA BLINDER
+#=================
 
+oaxaca(excesso ~ infect + ua + mais65 + regiao + populacao | pobre , data = OB, reg.fun = lm)
 
 reg_1 <- (lm(excesso ~ wealth*corona + ua + mais65 + regiao + populacao, data = COVID))
 reg_1
