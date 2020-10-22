@@ -216,7 +216,10 @@ COVID <- covid_mensal %>%
   right_join(mortes, by = c('nome_microrregiao' = 'nome_microrregiao')) %>% 
   left_join(mais65, by = c('nome_microrregiao' = 'nome_microrregiao')) %>%  
   mutate(infect = ifelse(volatilidade >= 0.006040925, "ALTA", "BAIXA"),
-         corona = ifelse(MES_CMPT > 3, TRUE, FALSE))
+         corona = ifelse(MES_CMPT > 3, TRUE, FALSE)) %>% 
+  mutate(alta = ifelse(wealth == "RICO", TRUE, FALSE),
+         baixa = ifelse(wealth == "POBRE", TRUE, FALSE),
+         media = ifelse(wealth == "MEDIO", TRUE, FALSE))
 
 OB <- COVID %>% 
   mutate(POBRE = ifelse(wealth == "POBRE", TRUE, FALSE),
@@ -267,7 +270,8 @@ summary(lm(excesso ~ wealth*corona + ua + mais65 + UF + populacao, data = COVID)
 
 #OAXACA BLINDER
 
-oaxaca(excesso ~ ua + mais65 + UF | POBRE, data = OB, reg.fun = lm)
+oaxaca(excesso ~ corona + ua + mais65 + regiao + populacao + MES_CMPT | baixa , data = COVID, reg.fun = lm)
+oaxaca(excesso ~ corona + ua + mais65 + regiao + populacao + MES_CMPT | baixa | corona , data = COVID, R = 100, reg.fun = lm, na.rm = TRUE)
 
 reg_1 <- (lm(excesso ~ wealth*corona + ua + mais65 + regiao + populacao, data = COVID))
 reg_1
