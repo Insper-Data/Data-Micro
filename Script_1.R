@@ -16,6 +16,7 @@ library(readxl)
 library(lubridate)
 library(fabricatr)
 library(broom)
+library(oaxaca)
 
 #===========================================================================================
 ## Dados referentes ao PIB Muncipal 
@@ -24,19 +25,19 @@ library(broom)
 # Base de dados com o PIB Municipal
 
 base_PIB <- read_excel("PIB_2010_2017.xlsx")%>% 
-  rename(codigo_regiao = "C?digo da Grande Regi?o", 
-         regiao = "Nome da Grande Regi?o",
-         codigo_UF = "C?digo da Unidade da Federa??o",
-         UF = "Sigla da Unidade da Federa??o",
-         nome_UF = "Nome da Unidade da Federa??o",
-         codigo_municipio = "C?digo do Munic?pio",
-         nome_municipio = "Nome do Munic?pio",
-         regiao_metropolitana = "Regi?o Metropolitana",
-         codigo_mesorregiao = "C?digo da Mesorregi?o",
-         nome_mesorregiao = "Nome da Mesorregi?o",
-         codigo_microrregiao = "C?digo da Microrregi?o",
-         nome_microrregiao =  "Nome da Microrregi?o",
-         PIB = "Produto Interno Bruto, \r\na pre?os correntes\r\n(R$ 1.000)") %>%
+  rename(codigo_regiao = "Código da Grande Região", 
+         regiao = "Nome da Grande Região",
+         codigo_UF = "Código da Unidade da Federação",
+         UF = "Sigla da Unidade da Federação",
+         nome_UF = "Nome da Unidade da Federação",
+         codigo_municipio = "Código do Município",
+         nome_municipio = "Nome do Município",
+         regiao_metropolitana = "Região Metropolitana",
+         codigo_mesorregiao = "Código da Mesorregião",
+         nome_mesorregiao = "Nome da Mesorregião",
+         codigo_microrregiao = "Código da Microrregião",
+         nome_microrregiao =  "Nome da Microrregião",
+         PIB = "Produto Interno Bruto, \r\na preços correntes\r\n(R$ 1.000)") %>%
   filter(Ano == 2017) %>% 
   select(regiao, UF, 
          nome_municipio, 
@@ -114,7 +115,7 @@ mais65 <- age %>%
 ## Dados sobre mortalidade
 #===========================================================================================
 
-## Caso n?o tenha os dados no sistema 
+## Caso nao tenha os dados no sistema 
 #===========================================================================================
 
 SIH_18 <- fetch_datasus(year_start = 2018, month_start = 1, year_end = 2018, month_end = 8, information_system = "SIH-RD")
@@ -182,7 +183,7 @@ mortes <- obitos %>%
 ## Juntando todos os dados em uma base
 #===========================================================================================
 
-# Juntando as bases em uma, para fazer as regress?es
+# Juntando as bases em uma, para fazer as regressoes
 
 COVID <- covid_mensal %>% 
   left_join(base_PIB, by = c('municipio' = 'nome_municipio')) %>%  
@@ -217,6 +218,10 @@ COVID <- covid_mensal %>%
   mutate(infect = ifelse(volatilidade >= 0.006040925, "ALTA", "BAIXA"),
          corona = ifelse(MES_CMPT > 3, TRUE, FALSE))
 
+OB <- COVID %>% 
+  mutate(POBRE = ifelse(wealth == "POBRE", TRUE, FALSE),
+         RICO = ifelse(wealth == "RICO", TRUE, FALSE))
+  
 
 Acum <- covid_mensal %>% 
   left_join(base_PIB,by = c('municipio' = 'nome_municipio')) %>% 
@@ -260,7 +265,9 @@ summary(lm(excesso ~ wealth + infec1 + ua + mais65 + regiao + populacao, data = 
 
 summary(lm(excesso ~ wealth*corona + ua + mais65 + UF + populacao, data = COVID))
 
+#OAXACA BLINDER
 
+oaxaca(excesso ~ ua + mais65 + UF | POBRE, data = OB, reg.fun = lm)
 
 reg_1 <- (lm(excesso ~ wealth*corona + ua + mais65 + regiao + populacao, data = COVID))
 reg_1
