@@ -16,7 +16,6 @@ library(readxl)
 library(lubridate)
 library(fabricatr)
 library(broom)
-library(oaxaca)
 
 #===========================================================================================
 ## Dados referentes ao PIB Muncipal 
@@ -25,19 +24,19 @@ library(oaxaca)
 # Base de dados com o PIB Municipal
 
 base_PIB <- read_excel("PIB_2010_2017.xlsx")%>% 
-  rename(codigo_regiao = "Código da Grande Região", 
-         regiao = "Nome da Grande Região",
-         codigo_UF = "Código da Unidade da Federação",
-         UF = "Sigla da Unidade da Federação",
-         nome_UF = "Nome da Unidade da Federação",
-         codigo_municipio = "Código do Município",
-         nome_municipio = "Nome do Município",
-         regiao_metropolitana = "Região Metropolitana",
-         codigo_mesorregiao = "Código da Mesorregião",
-         nome_mesorregiao = "Nome da Mesorregião",
-         codigo_microrregiao = "Código da Microrregião",
-         nome_microrregiao =  "Nome da Microrregião",
-         PIB = "Produto Interno Bruto, \r\na preços correntes\r\n(R$ 1.000)") %>%
+  rename(codigo_regiao = "C?digo da Grande Regi?o", 
+         regiao = "Nome da Grande Regi?o",
+         codigo_UF = "C?digo da Unidade da Federa??o",
+         UF = "Sigla da Unidade da Federa??o",
+         nome_UF = "Nome da Unidade da Federa??o",
+         codigo_municipio = "C?digo do Munic?pio",
+         nome_municipio = "Nome do Munic?pio",
+         regiao_metropolitana = "Regi?o Metropolitana",
+         codigo_mesorregiao = "C?digo da Mesorregi?o",
+         nome_mesorregiao = "Nome da Mesorregi?o",
+         codigo_microrregiao = "C?digo da Microrregi?o",
+         nome_microrregiao =  "Nome da Microrregi?o",
+         PIB = "Produto Interno Bruto, \r\na pre?os correntes\r\n(R$ 1.000)") %>%
   filter(Ano == 2017) %>% 
   select(regiao, UF, 
          nome_municipio, 
@@ -61,7 +60,7 @@ covid_bruto <- read_excel("HIST_PAINEL_COVIDBR_31ago2020_1.xlsx",
 covid_mensal <- covid_bruto %>%
   filter(codmun != 0, 
          codRegiaoSaude != 0,
-           data == as.Date("2020-01-31")|
+         data == as.Date("2020-01-31")|
            data == as.Date("2020-02-29")|
            data == as.Date("2020-03-31")|
            data == as.Date("2020-04-30")|
@@ -115,7 +114,7 @@ mais65 <- age %>%
 ## Dados sobre mortalidade
 #===========================================================================================
 
-## Caso não tenha os dados no sistema 
+## Caso n?o tenha os dados no sistema 
 #===========================================================================================
 
 SIH_18 <- fetch_datasus(year_start = 2018, month_start = 1, year_end = 2018, month_end = 8, information_system = "SIH-RD")
@@ -161,7 +160,7 @@ load("SIH_20.Rdata")
 obitos <- SIH_18 %>% 
   left_join(SIH_19, by = c('MES_CMPT' = 'MES_CMPT', 'MUNIC_RES' = 'MUNIC_RES')) %>% 
   left_join(SIH_20, by = c('MES_CMPT' = 'MES_CMPT', 'MUNIC_RES' = 'MUNIC_RES')) %>% 
-  filter(MES_CMPT != 8) #ainda não temos dados completos de agosto
+  filter(MES_CMPT != 8) #ainda n?o temos dados completos de agosto
 
 mortes <- obitos %>%
   mutate(MES_CMPT = as.character(MES_CMPT)) %>% 
@@ -218,9 +217,6 @@ COVID <- covid_mensal %>%
   mutate(infect = ifelse(volatilidade >= 0.006040925, "ALTA", "BAIXA"),
          corona = ifelse(MES_CMPT > 3, TRUE, FALSE))
 
-OB <- COVID %>% 
-  mutate(rico = ifelse(wealth == "RICO", 1, 0),
-         pobre = ifelse(wealth == "POBRE", TRUE, FALSE))
 
 Acum <- covid_mensal %>% 
   left_join(base_PIB,by = c('municipio' = 'nome_municipio')) %>% 
@@ -264,11 +260,7 @@ summary(lm(excesso ~ wealth + infec1 + ua + mais65 + regiao + populacao, data = 
 
 summary(lm(excesso ~ wealth*corona + ua + mais65 + UF + populacao, data = COVID))
 
-#==================
-#OAXACA BLINDER
-#=================
 
-oaxaca(excesso ~ infect + ua + mais65 + regiao + populacao | pobre , data = OB, reg.fun = lm)
 
 reg_1 <- (lm(excesso ~ wealth*corona + ua + mais65 + regiao + populacao, data = COVID))
 reg_1
@@ -297,14 +289,14 @@ COVID %>%
             sd = sd(excesso)) %>%
   unique() %>%
   ggplot() + 
-    geom_line(aes(MES_CMPT, excesso, group = wealth, color = wealth), size = 2) +
+  geom_line(aes(MES_CMPT, excesso, group = wealth, color = wealth), size = 2) +
   theme_classic() +
   ylab("Excesso de mortalidade relativo") + 
-  xlab("Mês") +
-  scale_colour_discrete(name = "Nível de PIB per capita", labels = c("Alto","Médio", "Baixo")) +
-  labs(color = "Nível de Renda",
-       title = "Evolução do excesso de mortalidade em 2020",
-       subtitle = "por microrregião",
+  xlab("M?s") +
+  scale_colour_discrete(name = "N?vel de PIB per capita", labels = c("Alto","M?dio", "Baixo")) +
+  labs(color = "N?vel de Renda",
+       title = "Evolu??o do excesso de mortalidade em 2020",
+       subtitle = "por microrregi?o",
        caption = "Fonte: MicroDataSUS e IBGE")
 
 COVID %>%
@@ -316,11 +308,11 @@ COVID %>%
   geom_line(aes(MES_CMPT, excesso, group = wealth, color = wealth), size = 2) +
   theme_classic() +
   ylab("Excesso de mortalidade relativo") + 
-  xlab("Mês") + 
+  xlab("M?s") + 
   coord_cartesian(xlim = c(1,7), ylim = c(0,1.5))+
-  scale_colour_discrete(name = "Nível de PIB per capita", labels = c("Alto","Médio", "Baixo"))+
-  labs(title = "Evolução do excesso de mortalidade em 2020",
-       subtitle = "por microrregião",
+  scale_colour_discrete(name = "N?vel de PIB per capita", labels = c("Alto","M?dio", "Baixo"))+
+  labs(title = "Evolu??o do excesso de mortalidade em 2020",
+       subtitle = "por microrregi?o",
        caption = "Fonte: MicroDataSUS e IBGE")
 
 
@@ -377,8 +369,6 @@ covid_bruto <- read_excel("~/Desktop/Insper Data/HIST_PAINEL_COVIDBR_31ago2020_1
                                                                                                      "text", "text","numeric","numeric","numeric",
                                                                                                      "text", "date","numeric","numeric","numeric","numeric",
                                                                                                      "numeric","numeric","numeric","numeric","logical"))
-
-
 covid_mensal <- covid_bruto %>%
   filter(codmun != 0, 
          codRegiaoSaude != 0,
@@ -474,7 +464,7 @@ SIH_20 <- SIH_20 %>%
 obitos <- SIH_18 %>% 
   left_join(SIH_19, by = c('MES_CMPT' = 'MES_CMPT', 'MUNIC_RES' = 'MUNIC_RES')) %>% 
   left_join(SIH_20, by = c('MES_CMPT' = 'MES_CMPT', 'MUNIC_RES' = 'MUNIC_RES')) %>% 
-  filter(MES_CMPT != 8) #ainda não temos dados completos de agosto
+  filter(MES_CMPT != 8) #ainda n?o temos dados completos de agosto
 
 
 
@@ -661,12 +651,35 @@ COVID <- excesso_f %>%
 
 lm(excesso_mortes ~ Riqueza + populacao_total + mais65 + codSaude, data = COVID)
 
+#====================================================================
+#Indicadores sociais IBGE 2010
 
-#
-#
-#
-#
-#
-#
-#
+library(readxl)
+IDH_2010 <- read_excel("~/Desktop/IDH_2010.xls")
+
+CENSO_2010 <- IDH_2010 %>% 
+  rename(COD_MUN = `Código do Município`,
+         EXP_EST = `Expectativa de anos de estudo`,
+         ANALF_15mais = `Taxa de analfabetismo - 15 anos ou mais`,
+         GINI = `Índice de Gini`,
+         EXTR_POBR = `% de extremamente pobres`,
+         TRAB_PROP = `% de trabalhadores por conta própria - 18 anos ou mais`,
+         TAXA_ATIV_18mais = `Taxa de atividade - 18 anos ou mais`,
+         AGUA_ENC = `% da população em domicílios com água encanada`,
+         BANHEIRO = `% da população em domicílios com banheiro e água encanada`,
+         COLETA = `% da população em domicílios com coleta de lixo`,
+         ENERGIA = `% da população em domicílios com energia elétrica`,
+         AGUA_INADEQUADO = `% de pessoas em domicílios com abastecimento de água e esgotamento sanitário inadequados`,
+         SUB_ESC = `Subíndice de escolaridade - IDHM Educação`,
+         SUB_FREQ = `Subíndice de frequência escolar - IDHM Educação`,
+         IDHM_Educ = `IDHM Educação`,
+         IDHM_Long = `IDHM Longevidade`,
+         IDHM_Renda = `IDHM Renda`) %>% 
+  select(Município, COD_MUN, EXP_EST, ANALF_15mais, GINI, EXTR_POBR, 
+         TRAB_PROP, TAXA_ATIV_18mais, AGUA_ENC, BANHEIRO,
+         COLETA, ENERGIA, AGUA_INADEQUADO, IDHM, SUB_ESC, SUB_FREQ,
+         IDHM_Educ, IDHM_Long, IDHM_Renda)
+
+
+#PNAD Covid
 
