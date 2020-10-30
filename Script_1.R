@@ -4,7 +4,7 @@ rm(list = ls())
 
 # Selecione o dirtorio a ser utilizado
 
-setwd("C:/Users/Pedro Saboia/Desktop/Insper Data")
+setwd("C:\\Users\\arthu\\Desktop\\InsperData\\COVID\\DiffDiff\\Data-Micro")
 
 # Pacotes utilizados
 
@@ -14,9 +14,43 @@ library(microdatasus)
 library(skimr)
 library(readxl)
 library(lubridate)
-library(fabricatr)
 library(broom)
-library(oaxaca)
+
+#===========================================================================================
+## Dados sobre mortalidade
+#===========================================================================================
+## Caso não tenha os dados no sistema 
+#===========================================================================================
+
+SIH_18 <- fetch_datasus(year_start = 2018, month_start = 1, year_end = 2018, month_end = 8, information_system = "SIH-RD")
+SIH_18 <- process_sih(SIH_18)
+
+SIH_19 <- fetch_datasus(year_start = 2019, month_start = 1, year_end = 2019, month_end = 8, information_system = "SIH-RD")
+SIH_19 <- process_sih(SIH_19)
+
+SIH_20 <- fetch_datasus(year_start = 2020, month_start = 1, year_end = 2020, month_end = 8, information_system = "SIH-RD")
+SIH_20 <- process_sih(SIH_20)
+
+SIH_18 <- SIH_18 %>%   
+  filter(MORTE=="Sim") %>% 
+  select(MUNIC_RES, MES_CMPT, MORTE, RACA_COR, SEXO, IDADE) %>% 
+  mutate(MUNIC_RES = as.integer(MUNIC_RES)) %>% 
+  group_by(MES_CMPT, MUNIC_RES) %>% 
+  summarise(mortes_18 = n())
+
+SIH_19 <- SIH_19 %>%   
+  filter(MORTE=="Sim") %>% 
+  select(MUNIC_RES, MES_CMPT, MORTE, RACA_COR, SEXO, IDADE) %>% 
+  mutate(MUNIC_RES = as.integer(MUNIC_RES)) %>% 
+  group_by(MES_CMPT, MUNIC_RES) %>% 
+  summarise(mortes_19 = n())
+
+SIH_20 <- SIH_20 %>%   
+  filter(MORTE=="Sim") %>% 
+  select(MUNIC_RES, MES_CMPT, MORTE, RACA_COR, SEXO, IDADE) %>% 
+  mutate(MUNIC_RES = as.integer(MUNIC_RES)) %>% 
+  group_by(MES_CMPT, MUNIC_RES) %>% 
+  summarise(mortes_20 = n())
 
 #===========================================================================================
 ## Dados referentes ao PIB Muncipal 
@@ -81,7 +115,7 @@ covid_mensal <- covid_bruto %>%
 # Com essa base temos a populacao, o municipio, e indicador de zona urbana.   
 
 #===========================================================================================
-## Populacao mais de 65 anos
+## Populacao acima de 65 anos
 #===========================================================================================
 
 age <- read_csv("POPBR12.csv")
@@ -110,44 +144,6 @@ mais65 <- age %>%
   mutate(mais65 = POPULACAO / TOTAL) %>% 
   select(-c(POPULACAO:TOTAL))
 
-
-#===========================================================================================
-## Dados sobre mortalidade
-#===========================================================================================
-
-## Caso nao tenha os dados no sistema 
-#===========================================================================================
-
-SIH_18 <- fetch_datasus(year_start = 2018, month_start = 1, year_end = 2018, month_end = 8, information_system = "SIH-RD")
-SIH_18 <- process_sih(SIH_18)
-
-SIH_19 <- fetch_datasus(year_start = 2019, month_start = 1, year_end = 2019, month_end = 8, information_system = "SIH-RD")
-SIH_19 <- process_sih(SIH_19)
-
-SIH_20 <- fetch_datasus(year_start = 2020, month_start = 1, year_end = 2020, month_end = 8, information_system = "SIH-RD")
-SIH_20 <- process_sih(SIH_20)
-
-SIH_18 <- SIH_18 %>%   
-  filter(MORTE=="Sim") %>% 
-  select(MUNIC_RES, MES_CMPT, MORTE, RACA_COR, SEXO, IDADE) %>% 
-  mutate(MUNIC_RES = as.integer(MUNIC_RES)) %>% 
-  group_by(MES_CMPT, MUNIC_RES) %>% 
-  summarise(mortes_18 = n())
-
-SIH_19 <- SIH_19 %>%   
-  filter(MORTE=="Sim") %>% 
-  select(MUNIC_RES, MES_CMPT, MORTE, RACA_COR, SEXO, IDADE) %>% 
-  mutate(MUNIC_RES = as.integer(MUNIC_RES)) %>% 
-  group_by(MES_CMPT, MUNIC_RES) %>% 
-  summarise(mortes_19 = n())
-
-SIH_20 <- SIH_20 %>%   
-  filter(MORTE=="Sim") %>% 
-  select(MUNIC_RES, MES_CMPT, MORTE, RACA_COR, SEXO, IDADE) %>% 
-  mutate(MUNIC_RES = as.integer(MUNIC_RES)) %>% 
-  group_by(MES_CMPT, MUNIC_RES) %>% 
-  summarise(mortes_20 = n())
-
 ## Caso tenha os dados no sistema 
 #===========================================================================================
 
@@ -159,9 +155,9 @@ load("SIH_20.Rdata")
 #===========================================================================================
 
 obitos <- SIH_18 %>% 
-  left_join(SIH_19, by = c('MES_CMPT' = 'MES_CMPT', 'MUNIC_RES' = 'MUNIC_RES')) %>% 
+  left_join(SIH_19_f, by = c('MES_CMPT' = 'MES_CMPT', 'MUNIC_RES' = 'MUNIC_RES')) %>% 
   left_join(SIH_20, by = c('MES_CMPT' = 'MES_CMPT', 'MUNIC_RES' = 'MUNIC_RES')) %>% 
-  filter(MES_CMPT != 8) #ainda n?o temos dados completos de agosto
+  filter(MES_CMPT != 8) #ainda não temos dados completos de agosto
 
 mortes <- obitos %>%
   mutate(MES_CMPT = as.character(MES_CMPT)) %>% 
@@ -183,7 +179,7 @@ mortes <- obitos %>%
 ## Juntando todos os dados em uma base
 #===========================================================================================
 
-# Juntando as bases em uma, para fazer as regressoes
+# Juntando as bases em uma, para fazer as regress?es
 
 COVID <- covid_mensal %>% 
   left_join(base_PIB, by = c('municipio' = 'nome_municipio')) %>%  
@@ -221,10 +217,6 @@ COVID <- covid_mensal %>%
          baixa = ifelse(wealth == "POBRE", TRUE, FALSE),
          media = ifelse(wealth == "MEDIO", TRUE, FALSE))
 
-OB <- COVID %>% 
-  mutate(POBRE = ifelse(wealth == "POBRE", TRUE, FALSE),
-         RICO = ifelse(wealth == "RICO", TRUE, FALSE))
-  
 
 Acum <- covid_mensal %>% 
   left_join(base_PIB,by = c('municipio' = 'nome_municipio')) %>% 
@@ -233,65 +225,45 @@ Acum <- covid_mensal %>%
   group_by(nome_microrregiao) %>% 
   summarise(casosAcumulado = sum(casosAcumulado))
 
-median(COVID_test$casos_per_capita, na.rm = TRUE)
-median(COVID$volatilidade, na.rm = TRUE)
-
 COVID_test <- COVID %>% 
   filter(!is.na(nome_microrregiao)) %>% 
   left_join(Acum, by = c("nome_microrregiao" = "nome_microrregiao")) %>% 
   mutate(casos_per_capita = (casosAcumulado / populacao),
-         infec1 = ifelse(volatilidade >= median(COVID_test$volatilidade, na.rm = TRUE), "ALTA", "BAIXA"),
+         infec1 = ifelse(volatilidade >= median(COVID$volatilidade, na.rm = TRUE), "ALTA", "BAIXA"),
          infec2 = ifelse(casos_per_capita >= 0.009373, "ALTA", "BAIXA"))
+
+median(COVID_test$casos_per_capita, na.rm = TRUE)
+median(COVID$volatilidade, na.rm = TRUE)
 
 
 #===========================================================================================
 ## Regressao
 #===========================================================================================
 
-summary(lm(excesso ~ wealth*MES_CMPT + ua + mais65 + regiao + populacao, data = COVID))
+summary(lm(excesso ~ wealth*corona + wealth + corona + ua + mais65 + regiao + populacao, data = COVID)) #com Efeitos Fixos de Regiao e sem Efeitos Fixos de Tempo
 
-summary(lm(excesso ~ wealth*corona + ua + mais65 + regiao + populacao, data = COVID))
+summary(lm(excesso ~ wealth*corona + wealth + corona + ua + mais65 + UF + populacao, data = COVID)) #com Efeitos Fixos de Unidade Federativa e sem Efeitos Fixos de Tempo
 
-lm(excesso ~ wealth*infect + ua + mais65 + regiao + populacao, data = COVID)
+summary(lm(excesso ~ wealth*corona + wealth + corona + ua + mais65 + populacao + MES_CMPT, data = COVID)) #sem Efeitos Fixos de Regiao/UF e com Efeitos Fixos de Tempo
 
-lm(excesso ~ wealth*infect*corona + ua + mais65 + regiao + populacao, data = COVID)
+summary(lm(excesso ~ wealth*corona + wealth + corona + ua + mais65 + UF + populacao + MES_CMPT, data = COVID)) #com Efeitos Fixos de Unidade Federativa e com Efeitos Fixos de Tempo
 
-summary(lm(excesso ~ wealth*infect*MES_CMPT + ua + mais65 + regiao + populacao, data = COVID))
+summary(lm(excesso ~ wealth*corona + wealth + corona + ua + mais65 + regiao + populacao + MES_CMPT, data = COVID)) #com Efeitos Fixos de Regiao e com Efeitos Fixos de Tempo
 
-summary(lm(excesso ~ wealth*infect*corona + ua + mais65 + regiao + populacao, data = COVID))
+reg_regiao <- (lm(excesso ~ wealth*corona + wealth + corona + ua + mais65 + regiao + populacao, data = COVID))
 
-lm(excesso ~ wealth*infect + ua + mais65 + regiao + populacao + MES_CMPT, data = COVID)
+tidy_reg_regiao <- tidy(reg_regiao)
+tidy_reg_regiao
 
-lm(excesso ~ wealth + infec2 + ua + mais65 + regiao + populacao, data = COVID_test)
+write.csv(tidy_reg_regiao, "reg_regiao.csv")
 
-summary(lm(excesso ~ wealth + infec1 + ua + mais65 + regiao + populacao, data = COVID_test))
+reg_UF <- (lm(excesso ~ wealth*corona + wealth + corona + ua + mais65 + UF + populacao + MES_CMPT, data = COVID))
+reg_UF
 
-summary(lm(excesso ~ wealth*corona + ua + mais65 + UF + populacao, data = COVID))
+tidy_reg_UF <- tidy(reg_UF)
+tidy_reg_UF
 
-#OAXACA BLINDER
-
-oaxaca(excesso ~ corona + ua + mais65 + regiao + populacao + MES_CMPT | baixa , data = COVID, reg.fun = lm)
-oaxaca(excesso ~ corona + ua + mais65 + regiao + populacao + MES_CMPT | baixa | corona , data = COVID, R = 100, reg.fun = lm, na.rm = TRUE)
-
-reg_1 <- (lm(excesso ~ wealth*corona + ua + mais65 + regiao + populacao, data = COVID))
-reg_1
-
-tidy_reg1 <- tidy(reg_1)
-tidy_reg1
-
-write.csv(tidy_reg1, "reg_covid_regiao.csv")
-
-reg_2 <- (lm(excesso ~ wealth*corona + ua + mais65 + UF + populacao + MES_CMPT, data = COVID))
-reg_2
-
-tidy_reg2 <- tidy(reg_2)
-tidy_reg2
-
-write.csv(tidy_reg2, "reg_covid_UF_mes.csv")
-
-summary(lm(excesso ~ wealth + corona + ua + mais65 + UF + populacao + MES_CMPT, data = COVID)) ## 7 fica sem efeito 
-
-summary(lm(excesso ~ wealth*infect + ua + mais65 + UF + populacao + MES_CMPT, data = COVID)) 
+write.csv(tidy_reg_UF, "reg_UF.csv")
 
 COVID %>%
   filter(!is.na(wealth)) %>%
@@ -303,11 +275,11 @@ COVID %>%
   geom_line(aes(MES_CMPT, excesso, group = wealth, color = wealth), size = 2) +
   theme_classic() +
   ylab("Excesso de mortalidade relativo") + 
-  xlab("M?s") +
-  scale_colour_discrete(name = "N?vel de PIB per capita", labels = c("Alto","M?dio", "Baixo")) +
-  labs(color = "N?vel de Renda",
-       title = "Evolu??o do excesso de mortalidade em 2020",
-       subtitle = "por microrregi?o",
+  xlab("Mês") +
+  scale_colour_discrete(name = "Nível de PIB per capita", labels = c("Alto","Médio", "Baixo")) +
+  labs(color = "Nível de Renda",
+       title = "Evolução do excesso de mortalidade em 2020",
+       subtitle = "por microrregião",
        caption = "Fonte: MicroDataSUS e IBGE")
 
 COVID %>%
@@ -319,14 +291,12 @@ COVID %>%
   geom_line(aes(MES_CMPT, excesso, group = wealth, color = wealth), size = 2) +
   theme_classic() +
   ylab("Excesso de mortalidade relativo") + 
-  xlab("M?s") + 
+  xlab("Mês") + 
   coord_cartesian(xlim = c(1,7), ylim = c(0,1.5))+
-  scale_colour_discrete(name = "N?vel de PIB per capita", labels = c("Alto","M?dio", "Baixo"))+
-  labs(title = "Evolu??o do excesso de mortalidade em 2020",
-       subtitle = "por microrregi?o",
+  scale_colour_discrete(name = "Nível de PIB per capita", labels = c("Alto","Médio", "Baixo"))+
+  labs(title = "Evolução do excesso de mortalidade em 2020",
+       subtitle = "por microrregião",
        caption = "Fonte: MicroDataSUS e IBGE")
-
-
 
 #===========================================================================================
 # EXTRA 
@@ -337,7 +307,7 @@ Acum <- covid_mensal %>%
   select(nome_microrregiao, codmun, mes, casosAcumulado) %>% 
   filter(mes == 7) %>% 
   group_by(nome_microrregiao) %>% 
-  summarise(casosAcumulado = sum(casosAcumulado))
+  summarise(casosAcumulado = sum(casosAcumulado))1
 
 median(COVID_test$casos_per_capita, na.rm = TRUE)
 median(COVID$volatilidade, na.rm = TRUE)
@@ -349,348 +319,8 @@ COVID_test <- COVID %>%
          infec1 = ifelse(volatilidade >= median(COVID_test$volatilidade, na.rm = TRUE), "ALTA", "BAIXA"),
          infec2 = ifelse(casos_per_capita >= 0.009373, "ALTA", "BAIXA"))
 
-#Projeto Insper Data - Duque
-
-#Pacotes utilizados
-
-rm(list=ls())
-
-library(dplyr)
-library(tidyverse)
-library(microdatasus)
-library(skimr)
-library(readxl)
-library(lubridate)
-
-
-install.packages("devtools")
-devtools::install_github("rfsaldanha/microdatasus")
-
-####
-
-## Analise da COVID-19 
-
-# Selecione diretorio contendo as bases 
-
-setwd("C:/Users/Pedro Saboia/Desktop/Insper Data")
-
-# Buscando os dados referentes a COVID-19
-
-covid_bruto <- read_excel("~/Desktop/Insper Data/HIST_PAINEL_COVIDBR_31ago2020_1.xlsx",col_types = c("text", 
-                                                                                                     "text", "text","numeric","numeric","numeric",
-                                                                                                     "text", "date","numeric","numeric","numeric","numeric",
-                                                                                                     "numeric","numeric","numeric","numeric","logical"))
-covid_mensal <- covid_bruto %>%
-  filter(codmun != 0, 
-         codRegiaoSaude != 0,
-         data == as.Date("2020-03-31")|
-           data == as.Date("2020-04-30")|
-           data == as.Date("2020-05-31")|
-           data == as.Date("2020-06-30")|
-           data == as.Date("2020-07-31")|
-           data == as.Date("2020-08-31")) %>% 
-  select(-c(emAcompanhamentoNovos, Recuperadosnovos, semanaEpi))
-
-covid_m_rs <- covid_mensal %>% 
-  group_by(codRegiaoSaude, data) %>% 
-  summarise(Casos_Acumulados = sum(casosAcumulado))
-
-municipios <- covid_mensal %>% 
-  group_by(codmun) %>% 
-  summarise(municipio = municipio) %>% 
-  unique()
-
-dic <- covid_mensal %>% 
-  group_by(codmun) %>% 
-  summarise(codSaude = mean(codRegiaoSaude),
-            nome_regiao = nomeRegiaoSaude,
-            estado = estado) %>% 
-  unique()
-
-## Populacao 
-
-
-pop <- read_excel('ESTIMA_PO.2019-2019.xls', col_names = c('cod', 'Mun', 'populacao'),
-                  col_types = c('text', 'text', 'numeric')) %>% 
-  select(-cod) %>% 
-  filter(Mun != 'Munic?pios')
-
-popul <- municipios %>% 
-  left_join(pop, by = c('municipio' = 'Mun')) %>%
-  filter(!is.na(populacao)) %>%
-  left_join(dic, by = c('codmun' = 'codmun')) %>%
-  group_by(codSaude, nome_regiao, estado) %>%
-  summarise(populacao_total = sum(populacao))
-
-## Criacao do indice de contaminacao  
-
-covid_data <- covid_m_rs %>% 
-  left_join(popul, by = c('codRegiaoSaude' = 'codSaude')) %>% 
-  mutate(casos_relativos = (Casos_Acumulados / populacao_total) * 10000)
-
-covid_data %>% 
-  group_by(codRegiaoSaude) %>% 
-  summarise(sd= sd(casos_relativos)) %>% 
-  View()
-
-covid_m_rs <- covid_m_rs %>% 
-  group_by(data) %>%
-  mutate(index = ((Casos_Acumulados - min(Casos_Acumulados))/(max(Casos_Acumulados) - min(Casos_Acumulados))) * 100)
-
-
-## Baixando dados de Maio, Junho e Julho para construcao da base final
-
-
-SIH_18 <- fetch_datasus(year_start = 2018, month_start = 1, year_end = 2018, month_end = 8, information_system = "SIH-RD")
-SIH_18 <- process_sih(SIH_18)
-
-SIH_19 <- fetch_datasus(year_start = 2019, month_start = 1, year_end = 2019, month_end = 8, information_system = "SIH-RD")
-SIH_19 <- process_sih(SIH_19)
-
-SIH_20 <- fetch_datasus(year_start = 2020, month_start = 1, year_end = 2020, month_end = 8, information_system = "SIH-RD")
-SIH_20 <- process_sih(SIH_20)
-
-SIH_18 <- SIH_18 %>%   
-  filter(MORTE=="Sim") %>% 
-  select(MUNIC_RES, MES_CMPT, MORTE, RACA_COR, SEXO, IDADE) %>% 
-  mutate(MUNIC_RES = as.integer(MUNIC_RES)) %>% 
-  group_by(MES_CMPT, MUNIC_RES) %>% 
-  summarise(mortes_18 = n())
-
-
-SIH_19 <- SIH_19 %>%   
-  filter(MORTE=="Sim") %>% 
-  select(MUNIC_RES, MES_CMPT, MORTE, RACA_COR, SEXO, IDADE) %>% 
-  mutate(MUNIC_RES = as.integer(MUNIC_RES)) %>% 
-  group_by(MES_CMPT, MUNIC_RES) %>% 
-  summarise(mortes_19 = n())
-
-SIH_20 <- SIH_20 %>%   
-  filter(MORTE=="Sim") %>% 
-  select(MUNIC_RES, MES_CMPT, MORTE, RACA_COR, SEXO, IDADE) %>% 
-  mutate(MUNIC_RES = as.integer(MUNIC_RES)) %>% 
-  group_by(MES_CMPT, MUNIC_RES) %>% 
-  summarise(mortes_20 = n())
-
-obitos <- SIH_18 %>% 
-  left_join(SIH_19, by = c('MES_CMPT' = 'MES_CMPT', 'MUNIC_RES' = 'MUNIC_RES')) %>% 
-  left_join(SIH_20, by = c('MES_CMPT' = 'MES_CMPT', 'MUNIC_RES' = 'MUNIC_RES')) %>% 
-  filter(MES_CMPT != 8) #ainda n?o temos dados completos de agosto
-
-
-
-SIH_18 <- SIH_18 %>%   
-  filter(MORTE=="Sim") %>% 
-  select(MUNIC_RES, MES_CMPT, MORTE, DIAG_PRINC, RACA_COR, SEXO, IDADE) %>% 
-  mutate(MUNIC_RES = as.integer(MUNIC_RES))
-
-SIH_19 <- SIH_19 %>%   
-  filter(MORTE=="Sim") %>% 
-  select(MUNIC_RES, MES_CMPT, MORTE, RACA_COR, SEXO, IDADE) %>% 
-  mutate(MUNIC_RES = as.integer(MUNIC_RES)) 
-
-SIH_20 <- SIH_20 %>%   
-  filter(MORTE=="Sim") %>% 
-  select(MUNIC_RES, MES_CMPT, MORTE, DIAG_PRINC, RACA_COR, SEXO, IDADE) %>% 
-  mutate(MUNIC_RES = as.integer(MUNIC_RES))
-
-dic_doencas <- read_excel("~/Downloads/CID-10-SUBCATEGORIAS.xls")
-dic_doencas <- dic_doencas %>% 
-  mutate(codigo_doenca = SUBCAT,
-         descricao = DESCRICAO) %>% 
-  select(codigo_doenca, descricao)
-
-SIH_20 %>% 
-  group_by(DIAG_PRINC) %>% 
-  summarise(total = n()) %>% 
-  arrange(desc(total)) %>% 
-  head(15) %>% 
-  ggplot(aes(x = DIAG_PRINC, y = total)) +
-  geom_col(aes(fill = DIAG_PRINC))
-
-#Adicionando o codigo da regiao de saude
-
-mort_reg_18 <- SIH_18 %>% 
-  left_join(dic, by = c("MUNIC_RES" = "codmun")) %>% 
-  group_by(MES_CMPT, codSaude) %>% 
-  summarise(mortes_18 = n()) %>% 
-  mutate(ANO = 2018)
-
-mort_reg_19 <- SIH_19 %>% 
-  left_join(dic, by = c("MUNIC_RES" = "codmun")) %>% 
-  group_by(MES_CMPT, codSaude) %>% 
-  summarise(mortes_19 = n()) %>% 
-  mutate(ANO = 2019)
-
-mort_reg_20 <- SIH_20 %>% 
-  left_join(dic, by = c("MUNIC_RES" = "codmun")) %>% 
-  group_by(MES_CMPT, codSaude) %>% 
-  summarise(mortes_20 = n()) %>% 
-  mutate(ANO = 2020)
-
-excesso_f <- mort_reg_18 %>% 
-  left_join(mort_reg_19, by = c("codSaude" = "codSaude",
-                                "MES_CMPT" = "MES_CMPT")) %>% 
-  left_join(mort_reg_20, by = c("codSaude" = "codSaude",
-                                "MES_CMPT" = "MES_CMPT")) %>% 
-  mutate(excesso_mortes = mortes_20 / 
-           ((mortes_18 + mortes_19)/2))
-
-rm(SIH_18,SIH_19, SIH_20)
-
-save(mort_reg_18, file = "STH_18.Rdata")
-save(mort_reg_19, file = "STH_19.Rdata")
-save(mort_reg_20, file = "STH_20.Rdata")
-
-
-#Organizando dados do PIB
-
-getwd()
-setwd("C:\\Users\\arthu\\Desktop\\6o Semestre\\InsperData\\COVID\\DiffDiff")
-
-base_PIB <- read_excel("PIB_2010_2017.xlsx")
-
-base_casos_obitos <- read_excel("casos_obitos.xlsx", col_types = c("text", "text", "text", "numeric", "numeric", "numeric", "text", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "text", "text", "numeric"))
-
-###
-
-colnames(base_PIB)
-
-base_PIB <- base_PIB %>% 
-  rename(codigo_microrregiao = "C?digo da Microrregi?o")
-
-base_PIB <- base_PIB %>% 
-  rename(codigo_estado = "C?digo da Grande Regi?o") %>% 
-  rename(estado = "Nome da Grande Regi?o") %>% 
-  rename(codigo_UF = "C?digo da Unidade da Federa??o") %>% 
-  rename(UF = "Sigla da Unidade da Federa??o") %>% 
-  rename(nome_UF = "Nome da Unidade da Federa??o") %>% 
-  rename(codigo_municipio = "C?digo do Munic?pio") %>% 
-  rename(nome_municipio = "Nome do Munic?pio") %>% 
-  rename(regiao_metropolitana = "Regi?o Metropolitana") %>% 
-  rename(codigo_mesorregiao = "C?digo da Mesorregi?o") %>% 
-  rename(nome_mesorregiao = "Nome da Mesorregi?o") %>% 
-  rename(nome_microrregiao =  "Nome da Microrregi?o") %>% 
-  rename(PIB_per_capita = "Produto Interno Bruto per capita, \r\na pre?os correntes\r\n(R$ 1,00)")
-
-PIB <- base_PIB %>% 
-  group_by(Ano, codigo_microrregiao) %>%
-  summarise(PIB_p_capita = mean(PIB_per_capita)) %>% 
-  filter(Ano == 2017) %>% 
-  arrange(desc(PIB_p_capita)) %>% 
-  mutate(grupo = ntile(PIB_p_capita, 3),
-         Riqueza = ifelse(grupo == 3, 'RICA', ifelse(grupo == 2, 'MEDIA', 'POBRE')))
-
-base_casos_obitos <- base_casos_obitos %>% 
-  rename(codigo_microrregiao = codRegiaoSaude) %>% 
-  rename(nome_municipio = municipio)
-
-casos_obitos <- base_casos_obitos %>% 
-  mutate(data = as_date(data)) %>% 
-  separate(data, into = c("ano", "mes", "dia", sep = "-"))
-
-casos_obitos <- casos_obitos %>% 
-  group_by(casos_obitos$codigo_microrregiao, casos_obitos$mes) %>% 
-  summarise(casos_acumulados = sum(casosAcumulado))
-
-### Primeiro teste envolvendo regress?o
-
-data <- excesso_f %>% 
-  select(MES_CMPT, codSaude, excesso_mortes) %>%
-  left_join(PIB, by = c('codSaude' = 'codigo_microrregiao')) %>% 
-  filter(!is.na(PIB_p_capita)) %>% 
-  select(-c(Ano, grupo)) %>% 
-  mutate(MES_CMPT = as.character(MES_CMPT),
-         codSaude = as.character(codSaude)) %>% 
-  mutate(treat_pobre = 0) %>%
-  mutate(treat_media = 0) %>%
-  mutate(treat_rica = 0) %>% 
-  mutate(pre_2018 = 0) %>% 
-  mutate(pre_2019 = 0) %>% 
-  mutate(post_2020 = 0)
-
-data$treat_pobre = ifelse(data$Riqueza == "POBRE", 1, 0 )
-data$treat_media = ifelse(data$Riqueza == "MEDIA", 1, 0 )
-data$treat_rica = ifelse(data$Riqueza == "RICA", 1, 0 )
-
-data <- data %>% 
-  arrange(desc(treat_pobre))
-
-
-lm(excesso_mortes ~ Riqueza + codSaude, data = data)
-
-
-## Dados demogr?ficos populacionais
-
-age <- read.csv('POPBR12.CSV')
-
-poptotal <- age %>% 
-  group_by(MUNIC_RES) %>% 
-  summarise(TOTAL = sum(POPULACAO))
-
-mais65 <- age %>%
-  separate(FXETARIA, into = c('min', 'max'), sep = -2) %>% 
-  filter(min >= 65,
-         min != 7,
-         min != 8,
-         min != 9) %>% 
-  unite(faixa, min, max, sep = "-") %>% 
-  group_by(MUNIC_RES) %>% 
-  summarise(POPULACAO = sum(POPULACAO)) %>% 
-  left_join(poptotal, by = c('MUNIC_RES' = 'MUNIC_RES'))%>% 
-  left_join(covid_mensal, by = c('MUNIC_RES' = 'codmun')) %>% 
-  select(c(POPULACAO:municipio)) %>% 
-  left_join(base_PIB, by = c('municipio' = 'nome_municipio')) %>% 
-  unique() %>% 
-  group_by(nome_microrregiao) %>% 
-  summarise(POPULACAO = sum(POPULACAO),
-            TOTAL = sum(TOTAL)) %>% 
-  mutate(mais65 = POPULACAO / TOTAL) %>% 
-  select(-c(POPULACAO:TOTAL))
-
-# Base de dados final 
-
-COVID <- excesso_f %>% 
-  select(MES_CMPT, codSaude, excesso_mortes) %>%
-  left_join(PIB, by = c('codSaude' = 'codigo_microrregiao')) %>% 
-  filter(!is.na(PIB_p_capita)) %>% 
-  select(-c(Ano, grupo)) %>% 
-  left_join(popul, by = c('codSaude' = 'codSaude')) %>% 
-  left_join(mais65, by = c('codSaude' = 'codSaude')) %>% 
-  mutate(MES_CMPT = as.character(MES_CMPT),
-         codSaude = as.character(codSaude))
-
-lm(excesso_mortes ~ Riqueza + populacao_total + mais65 + codSaude, data = COVID)
-
-#====================================================================
-#Indicadores sociais IBGE 2010
-
-library(readxl)
-IDH_2010 <- read_excel("~/Desktop/IDH_2010.xls")
-
-CENSO_2010 <- IDH_2010 %>% 
-  rename(COD_MUN = `Código do Município`,
-         EXP_EST = `Expectativa de anos de estudo`,
-         ANALF_15mais = `Taxa de analfabetismo - 15 anos ou mais`,
-         GINI = `Índice de Gini`,
-         EXTR_POBR = `% de extremamente pobres`,
-         TRAB_PROP = `% de trabalhadores por conta própria - 18 anos ou mais`,
-         TAXA_ATIV_18mais = `Taxa de atividade - 18 anos ou mais`,
-         AGUA_ENC = `% da população em domicílios com água encanada`,
-         BANHEIRO = `% da população em domicílios com banheiro e água encanada`,
-         COLETA = `% da população em domicílios com coleta de lixo`,
-         ENERGIA = `% da população em domicílios com energia elétrica`,
-         AGUA_INADEQUADO = `% de pessoas em domicílios com abastecimento de água e esgotamento sanitário inadequados`,
-         SUB_ESC = `Subíndice de escolaridade - IDHM Educação`,
-         SUB_FREQ = `Subíndice de frequência escolar - IDHM Educação`,
-         IDHM_Educ = `IDHM Educação`,
-         IDHM_Long = `IDHM Longevidade`,
-         IDHM_Renda = `IDHM Renda`) %>% 
-  select(Município, COD_MUN, EXP_EST, ANALF_15mais, GINI, EXTR_POBR, 
-         TRAB_PROP, TAXA_ATIV_18mais, AGUA_ENC, BANHEIRO,
-         COLETA, ENERGIA, AGUA_INADEQUADO, IDHM, SUB_ESC, SUB_FREQ,
-         IDHM_Educ, IDHM_Long, IDHM_Renda)
-
-
-#PNAD Covid
-
+##################################################################################################
+##################################################################################################
+##################################################################################################
+##################################################################################################
+##################################################################################################
