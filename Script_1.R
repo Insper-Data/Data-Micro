@@ -4,7 +4,7 @@ rm(list = ls())
 
 # Selecione o dirtorio a ser utilizado
 
-setwd("C:\\Users\\arthu\\Desktop\\InsperData\\COVID\\DiffDiff\\Data-Micro")
+setwd('C:/Users/Pedro Saboia/Desktop/Insper Data')
 
 # Pacotes utilizados
 
@@ -118,7 +118,7 @@ covid_mensal <- covid_bruto %>%
 ## Populacao acima de 65 anos
 #===========================================================================================
 
-age <- read_csv("POPBR12.csv")
+age <- read_csv("https://raw.githubusercontent.com/Insper-Data/Data-Micro/master/POPBR12.csv")
 
 poptotal <- age %>% 
   group_by(MUNIC_RES) %>% 
@@ -250,6 +250,7 @@ summary(lm(excesso ~ wealth*corona + wealth + corona + ua + mais65 + UF + popula
 
 summary(lm(excesso ~ wealth*corona + wealth + corona + ua + mais65 + regiao + populacao + MES_CMPT, data = COVID)) #com Efeitos Fixos de Regiao e com Efeitos Fixos de Tempo
 
+# Regressao com efeitos fixos de regiao
 reg_regiao <- (lm(excesso ~ wealth*corona + wealth + corona + ua + mais65 + regiao + populacao, data = COVID))
 
 tidy_reg_regiao <- tidy(reg_regiao)
@@ -257,6 +258,7 @@ tidy_reg_regiao
 
 write.csv(tidy_reg_regiao, "reg_regiao.csv")
 
+# Regressao com efeitos fixos de estado
 reg_UF <- (lm(excesso ~ wealth*corona + wealth + corona + ua + mais65 + UF + populacao + MES_CMPT, data = COVID))
 reg_UF
 
@@ -265,6 +267,7 @@ tidy_reg_UF
 
 write.csv(tidy_reg_UF, "reg_UF.csv")
 
+# Grafico de Excesso de Mortalidade
 COVID %>%
   filter(!is.na(wealth)) %>%
   group_by(wealth, MES_CMPT) %>% 
@@ -282,6 +285,7 @@ COVID %>%
        subtitle = "por microrregião",
        caption = "Fonte: MicroDataSUS e IBGE")
 
+# Gráfico de Excesso de Mortalidade com eixos diferentes
 COVID %>%
   filter(!is.na(wealth)) %>%
   group_by(wealth, MES_CMPT) %>% 
