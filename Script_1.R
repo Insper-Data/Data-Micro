@@ -15,7 +15,6 @@ library(skimr)
 library(readxl)
 library(lubridate)
 library(broom)
-library(plyr)
 
 #===========================================================================================
 ## Dados sobre mortalidade hospitalar
@@ -54,7 +53,7 @@ SIH_20 <- SIH_20 %>%
   summarise(mortes_20 = n())
 
 #===========================================================================================
-## Dados sobre mortalidade hospitalar
+## Dados sobre mortalidade do CONASS
 #===========================================================================================
 
 conas_18 <- read_excel("CONASS_2018.xlsx") %>% 
@@ -65,12 +64,41 @@ conas_18 <- read_excel("CONASS_2018.xlsx") %>%
 conas_19 <- read_excel("CONASS_2019.xlsx") %>% 
   rename(mes = "Mês",
          municipio = "Município",
-         obitos = "Óbitos") %>% 
-  select(Ano, mes, UF, municipio, obitos)
-  
+         obitos = "Óbitos",
+         estado = "UF") %>%
+  select(Ano, mes, estado, municipio, obitos) %>% 
+  mutate(UF = ifelse(estado == "Acre", "AC",
+              ifelse(estado == "Alagoas", "AL",
+              ifelse(estado == "Amapá", "AP", 
+              ifelse(estado == "Amazonas", "AM",
+              ifelse(estado == "Bahia", "BA",
+              ifelse(estado == "Ceara", "CE",
+              ifelse(estado == "Espírito Santo", "ES",
+              ifelse(estado == "Goiás", "GO",
+              ifelse(estado == "Maranhão", "MA",
+              ifelse(estado == "Mato Grosso", "MT",
+              ifelse(estado == "Mato Grosso do Sul", "MS",
+              ifelse(estado == "Minas Gerais", "MG", 
+              ifelse(estado == "Pará", "PA",
+              ifelse(estado == "Paraíba", "PB", 
+              ifelse(estado == "Paraná", "PR",
+              ifelse(estado == "Pernambuco", "PE",
+              ifelse(estado == "Piauí", "PI", 
+              ifelse(estado == "Rio de Janeiro", "RJ",
+              ifelse(estado == "Rio Grande do Norte", "RN",
+              ifelse(estado == "Rio Grande do Sul", "RS",
+              ifelse(estado == "Rondônia", "RO",
+              ifelse(estado == "Roraima", "RR",
+              ifelse(estado == "Santa Catarina", "SC",
+              ifelse(estado == "São Paulo", "SP",
+              ifelse(estado == "Sergipe", "SE",
+              ifelse(estado == "Tocantins", "TO", 
+              ifelse(estado == "Distrito Federal", "DF", NA)
+              ))))))))))))))))))))))))))) %>% 
+  select(-estado)
+
 
 conas_20 <- read_excel("CONASS_2020.xlsx")
-
 
 #===========================================================================================
 ## Dados referentes ao PIB Muncipal 
@@ -79,7 +107,7 @@ conas_20 <- read_excel("CONASS_2020.xlsx")
 # Base de dados com o PIB Municipal
 
 base_PIB <- read_excel("PIB_2010_2017.xlsx") %>% 
-  filter(Ano == 2017) %>% 
+  filter(Ano == 2017) %>%
   rename(codigo_regiao = "Código da Grande Região", 
          regiao = "Nome da Grande Região",
          codigo_UF = "Código da Unidade da Federação",
@@ -93,12 +121,11 @@ base_PIB <- read_excel("PIB_2010_2017.xlsx") %>%
          codigo_microrregiao = "Código da Microrregião",
          nome_microrregiao =  "Nome da Microrregião",
          PIB = "Produto Interno Bruto, \r\na preços correntes\r\n(R$ 1.000)") %>%
-  select(regiao, UF, 
+  select(regiao, UF, nome_UF, 
          nome_municipio, 
          nome_mesorregiao,
          nome_microrregiao, 
          PIB)
-
 
 #===========================================================================================
 ## Dados referentes a contaminacao por COVID-19
