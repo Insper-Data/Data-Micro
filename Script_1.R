@@ -99,20 +99,6 @@ base_PIB <- read_excel("PIB_2010_2017.xlsx") %>%
          nome_microrregiao, 
          PIB)
 
-rename(codigo_regiao = "Código da Grande Região", 
-       regiao = "Nome da Grande Região",
-       codigo_UF = "Código da Unidade da Federação",
-       UF = "Sigla da Unidade da Federação",
-       nome_UF = "Nome da Unidade da Federação",
-       codigo_municipio = "Código do Município",
-       nome_municipio = "Nome do Município",
-       regiao_metropolitana = "Região Metropolitana",
-       codigo_mesorregiao = "Código da Mesorregião",
-       nome_mesorregiao = "Nome da Mesorregião",
-       codigo_microrregiao = "Código da Microrregião",
-       nome_microrregiao =  "Nome da Microrregião",
-       PIB = "Produto Interno Bruto, \r\na preços correntes\r\n(R$ 1.000)") %>%
-
 #===========================================================================================
 ## Dados referentes a contaminacao por COVID-19
 #===========================================================================================
