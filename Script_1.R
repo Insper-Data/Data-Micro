@@ -15,9 +15,10 @@ library(skimr)
 library(readxl)
 library(lubridate)
 library(broom)
+library(plyr)
 
 #===========================================================================================
-## Dados sobre mortalidade
+## Dados sobre mortalidade hospitalar
 #===========================================================================================
 ## Caso não tenha os dados no sistema 
 #===========================================================================================
@@ -53,12 +54,32 @@ SIH_20 <- SIH_20 %>%
   summarise(mortes_20 = n())
 
 #===========================================================================================
+## Dados sobre mortalidade hospitalar
+#===========================================================================================
+
+conas_18 <- read_excel("CONASS_2018.xlsx") %>% 
+  mutate(Ano = 2018) %>% 
+  rename(obitos = "mortes") %>% 
+  select(Ano, mes, UF, municipio, obitos)
+
+conas_19 <- read_excel("CONASS_2019.xlsx") %>% 
+  rename(mes = "Mês",
+         municipio = "Município",
+         obitos = "Óbitos") %>% 
+  select(Ano, mes, UF, municipio, obitos)
+  
+
+conas_20 <- read_excel("CONASS_2020.xlsx")
+
+
+#===========================================================================================
 ## Dados referentes ao PIB Muncipal 
 #===========================================================================================
 
 # Base de dados com o PIB Municipal
 
-base_PIB <- read_excel("PIB_2010_2017.xlsx")%>% 
+base_PIB <- read_excel("PIB_2010_2017.xlsx") %>% 
+  filter(Ano == 2017) %>% 
   rename(codigo_regiao = "Código da Grande Região", 
          regiao = "Nome da Grande Região",
          codigo_UF = "Código da Unidade da Federação",
@@ -72,12 +93,25 @@ base_PIB <- read_excel("PIB_2010_2017.xlsx")%>%
          codigo_microrregiao = "Código da Microrregião",
          nome_microrregiao =  "Nome da Microrregião",
          PIB = "Produto Interno Bruto, \r\na preços correntes\r\n(R$ 1.000)") %>%
-  filter(Ano == 2017) %>% 
   select(regiao, UF, 
          nome_municipio, 
          nome_mesorregiao,
          nome_microrregiao, 
          PIB)
+
+rename(codigo_regiao = "Código da Grande Região", 
+       regiao = "Nome da Grande Região",
+       codigo_UF = "Código da Unidade da Federação",
+       UF = "Sigla da Unidade da Federação",
+       nome_UF = "Nome da Unidade da Federação",
+       codigo_municipio = "Código do Município",
+       nome_municipio = "Nome do Município",
+       regiao_metropolitana = "Região Metropolitana",
+       codigo_mesorregiao = "Código da Mesorregião",
+       nome_mesorregiao = "Nome da Mesorregião",
+       codigo_microrregiao = "Código da Microrregião",
+       nome_microrregiao =  "Nome da Microrregião",
+       PIB = "Produto Interno Bruto, \r\na preços correntes\r\n(R$ 1.000)") %>%
 
 #===========================================================================================
 ## Dados referentes a contaminacao por COVID-19
