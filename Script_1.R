@@ -198,7 +198,7 @@ mais65 <- age %>%
   mutate(mais65 = POPULACAO / TOTAL) %>% 
   select(-c(POPULACAO:TOTAL))
 
-## Caso tenha os dados no sistema 
+## Caso tenha os dados de mortalidade hospitalar no sistema 
 #===========================================================================================
 
 load("SIH_18.Rdata")
@@ -244,6 +244,18 @@ conass_mortes <- conass %>%
             obitos_19 = sum(obitos_19),
             obitos_20 = sum(obitos_20)) %>% 
   mutate(relative_mortality = obitos_20 / ((obitos_18 + obitos_19) / 2))
+
+#===========================================================================================
+## Dados CNES
+#===========================================================================================
+
+cnes <- read_excel('CNES_Final.xlsx' )%>%
+  mutate(across(names(cnes)[3:19], as.double)) %>%
+  mutate_all(funs(replace_na(., 0))) %>% 
+  separate(Municipio, into = c("mun_cod", "mun_nome"), sep = 6) %>% 
+  separate(mun_nome, into = c("mun_nome", "cod"), sep = "-") %>% 
+  filter(is.na(cod)) %>% 
+  select(-cod)
 
 #===========================================================================================
 ## Juntando todos os dados em uma base
