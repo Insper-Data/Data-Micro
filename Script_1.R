@@ -15,6 +15,7 @@ library(skimr)
 library(readxl)
 library(lubridate)
 library(broom)
+library(openxlsx)
 
 #===========================================================================================
 ## Dados sobre mortalidade hospitalar
@@ -303,6 +304,7 @@ COVID <- covid_mensal %>%
   filter(obitos_18 != 0, obitos_19 != 0) %>% 
   select(-c(obitos_18:obitos_20))
 
+write.xlsx(COVID, "COVID.xlsx")
 
 Acum <- covid_mensal %>% 
   left_join(base_PIB,by = c('municipio' = 'nome_municipio')) %>% 
@@ -357,7 +359,7 @@ write.csv(tidy_reg_UF, "reg_UF.csv")
 ## Regressao CONASS
 #===========================================================================================
 
-summary(lm(relative_mortality ~ wealth*corona + wealth + corona + ua + mais65 + UF + populacao, data = COVID))
+summary(lm(relative_mortality ~ wealth*corona + ua + mais65 + UF + populacao, data = COVID))
 
 # Grafico de Excesso de Mortalidade
 COVID %>%
