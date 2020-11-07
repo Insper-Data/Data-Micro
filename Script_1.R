@@ -4,7 +4,7 @@ rm(list = ls())
 
 # Selecione o dirtorio a ser utilizado
 
-setwd('C:/Users/Pedro Saboia/Desktop/Insper Data')
+setwd('C:\\Users\\arthu\\Desktop\\InsperData\\COVID\\DiffDiff\\Data-Micro')
 
 # Pacotes utilizados
 
@@ -107,6 +107,12 @@ conas_20 <- read_excel("CONASS_2020.xlsx") %>%
          obitos_20 = "Registros")
 
 #===========================================================================================
+## Dados referentes ao Mercado de Trabalho 
+#===========================================================================================
+
+
+
+#===========================================================================================
 ## Dados referentes ao PIB Muncipal 
 #===========================================================================================
 
@@ -139,7 +145,7 @@ base_PIB <- read_excel("PIB_2010_2017.xlsx") %>%
 
 # Base de dados bruta -> ultima atualizacao: 31/ago/2020
 
-covid_bruto <- read_excel("HIST_PAINEL_COVIDBR_03nov2020.xlsx",
+covid_bruto <- read_excel("HIST_PAINEL_COVIDBR_31ago2020_1.xlsx",
                           col_types = c('text', 'text', 'text','numeric','numeric','numeric',
                                         'text', 'date','numeric','numeric','numeric','numeric',
                                         'numeric','numeric','numeric','numeric','logical'))
@@ -211,10 +217,14 @@ load("SIH_20.Rdata")
 
 # Dados hospitalares
 
+SIH_19 <- SIH_19_f 
+
 obitos <- SIH_18 %>% 
   left_join(SIH_19, by = c('MES_CMPT' = 'MES_CMPT', 'MUNIC_RES' = 'MUNIC_RES')) %>% 
   left_join(SIH_20, by = c('MES_CMPT' = 'MES_CMPT', 'MUNIC_RES' = 'MUNIC_RES')) %>% 
   filter(MES_CMPT != 8) #ainda não temos dados completos de agosto
+
+write.xlsx(obitos, "obitos.xlsx")
 
 mortes <- obitos %>%
   mutate(MES_CMPT = as.character(MES_CMPT)) %>% 
@@ -238,13 +248,27 @@ conass <- conas_18 %>%
   full_join(conas_20, by = c('municipio' = 'municipio', 'mes' = 'mes', 'UF' = 'UF')) %>% 
   replace_na(list(obitos_18 = 0, obitos_19 = 0, obitos_20 = 0))
 
+conass_2 <- conas_18 %>% 
+  full_join(conas_19, by = c('municipio' = 'municipio', 'mes' = 'mes', 'UF' = 'UF')) %>% 
+  full_join(conas_20, by = c('municipio' = 'municipio', 'mes' = 'mes', 'UF' = 'UF'))
+
 conass_mortes <- conass %>%  
   left_join(base_PIB, by = c('municipio' = 'nome_municipio', 'UF' = 'UF')) %>%
   group_by(nome_microrregiao, mes, UF) %>% 
   summarise(obitos_18 = sum(obitos_18),
             obitos_19 = sum(obitos_19),
             obitos_20 = sum(obitos_20)) %>% 
-  mutate(relative_mortality = obitos_20 / ((obitos_18 + obitos_19) / 2))
+  mutate(excesso_conass = obitos_20 / ((obitos_18 + obitos_19) / 2)) %>% 
+  mutate(excesso_conass_2 = excesso_conass -1)
+
+conass_mortes_NA <- conass %>%  
+  left_join(base_PIB, by = c('municipio' = 'nome_municipio', 'UF' = 'UF')) %>%
+  group_by(nome_microrregiao, mes, UF) %>% 
+  summarise(obitos_18 = sum(obitos_18),
+            obitos_19 = sum(obitos_19),
+            obitos_20 = sum(obitos_20)) %>% 
+  mutate(excesso_conass_NA = obitos_20 / ((obitos_18 + obitos_19) / 2)) %>% 
+  mutate(excesso_conass_NA_2 = excesso_conass_NA -1)
 
 #===========================================================================================
 ## Dados CNES
@@ -264,7 +288,7 @@ cnes <- read_excel('CNES_Final.xlsx' )%>%
 
 # Juntando as bases em uma, para fazer as regress?es
 
-COVID <- covid_mensal %>% 
+dados_dataSUS_excesso <- covid_mensal %>% 
   left_join(base_PIB, by = c('municipio' = 'nome_municipio')) %>%  
   group_by(nome_microrregiao, mes) %>% 
   summarise(populacao = sum(populacao),
@@ -299,12 +323,13 @@ COVID <- covid_mensal %>%
   mutate(alta = ifelse(wealth == "RICO", TRUE, FALSE),
          baixa = ifelse(wealth == "POBRE", TRUE, FALSE),
          media = ifelse(wealth == "MEDIO", TRUE, FALSE),
-         MES_CMPT = as.double(MES_CMPT)) %>% 
-  left_join(conass_mortes, by = c('nome_microrregiao' = 'nome_microrregiao', 'MES_CMPT' = 'mes', 'UF' = 'UF')) %>% 
-  filter(obitos_18 != 0, obitos_19 != 0) %>% 
-  select(-c(obitos_18:obitos_20))
+         MES_CMPT = as.double(MES_CMPT)) %>%
+  mutate(excesso_2 = excesso -1) %>% 
+  select(UF, regiao, nome_microrregiao, MES_CMPT, excesso, excesso_2, corona, wealth, ua, everything()) %>% 
+  select(-c(volatilidade, infect, mesorregiao)) %>% 
+  rename("mes" = "MES_CMPT")
 
-write.xlsx(COVID, "COVID.xlsx")
+write.xlsx(dados_dataSUS_excesso, "dados_dataSUS_excesso.xlsx")
 
 Acum <- covid_mensal %>% 
   left_join(base_PIB,by = c('municipio' = 'nome_municipio')) %>% 
@@ -323,6 +348,32 @@ COVID_test <- COVID %>%
 median(COVID_test$casos_per_capita, na.rm = TRUE)
 median(COVID$volatilidade, na.rm = TRUE)
 
+base_PIB_conass <- covid_mensal %>% 
+  left_join(base_PIB, c('municipio' = 'nome_municipio')) %>% 
+  group_by(nome_microrregiao) %>% 
+  summarise(populacao = sum(populacao),
+            PIB = sum(PIB),
+            metropolitana = mean(metropolitana)) %>% 
+  mutate(PIB_per_capita = PIB / populacao,
+         ua = ifelse(metropolitana > 0.5, TRUE, FALSE)) %>% 
+  filter(!is.na(nome_microrregiao),
+         !is.na(PIB_per_capita)) %>%
+  arrange(desc(PIB_per_capita)) %>%
+  mutate(wealth = ifelse(PIB_per_capita >= 27.364441, 'RICO',
+                         ifelse(PIB_per_capita >= 14.771092, 'MEDIO', 'POBRE'))) %>% 
+  mutate(alta = ifelse(wealth == "RICO", TRUE, FALSE),
+         baixa = ifelse(wealth == "POBRE", TRUE, FALSE),
+         media = ifelse(wealth == "MEDIO", TRUE, FALSE))
+  
+base_CONASS <- conass_mortes %>%
+  left_join(mais65, c("nome_microrregiao" = "nome_microrregiao")) %>% 
+  left_join(base_PIB_conass, c("nome_microrregiao" = "nome_microrregiao")) %>% 
+  mutate(corona = ifelse(mes > 3, TRUE, FALSE))
+
+dados_conass_excesso <- base_CONASS %>% 
+  select(-metropolitana)
+
+write.xlsx(dados_conass_excesso, "dados_conass_excesso.xlsx")
 
 #===========================================================================================
 ## Regressao hospitalar
@@ -338,8 +389,10 @@ summary(lm(excesso ~ wealth*corona + wealth + corona + ua + mais65 + UF + popula
 
 summary(lm(excesso ~ wealth*corona + wealth + corona + ua + mais65 + regiao + populacao + MES_CMPT, data = COVID)) #com Efeitos Fixos de Regiao e com Efeitos Fixos de Tempo
 
+summary(lm(excesso_2 ~ wealth*corona + wealth + corona + ua + mais65 + regiao + populacao + MES_CMPT, data = COVID)) #com Efeitos Fixos de Regiao e com Efeitos Fixos de Tempo
+
 # Regressao com efeitos fixos de regiao
-reg_regiao <- (lm(excesso ~ wealth*corona + wealth + corona + ua + mais65 + regiao + populacao, data = COVID))
+reg_regiao <- summary(lm(excesso ~ wealth*corona + wealth + corona + ua + mais65 + regiao + populacao + MES_CMPT, data = COVID))
 
 tidy_reg_regiao <- tidy(reg_regiao)
 tidy_reg_regiao
@@ -359,9 +412,26 @@ write.csv(tidy_reg_UF, "reg_UF.csv")
 ## Regressao CONASS
 #===========================================================================================
 
-summary(lm(relative_mortality ~ wealth*corona + ua + mais65 + UF + populacao, data = COVID))
+summary(lm(excesso_conass_2 ~ wealth*corona + ua + mais65 + UF + populacao + mes, data = base_CONASS))
 
 # Grafico de Excesso de Mortalidade
+COVID %>%
+  filter(!is.na(wealth)) %>%
+  group_by(wealth, MES_CMPT) %>% 
+  summarise(excesso_2 = mean(excesso_2),
+            sd = sd(excesso_2)) %>%
+  unique() %>%
+  ggplot() + 
+  geom_line(aes(MES_CMPT, excesso_2, group = wealth, color = wealth), size = 2) +
+  theme_classic() +
+  ylab("Excesso de mortalidade relativo") + 
+  xlab("Mês") +
+  scale_colour_discrete(name = "Nível de PIB per capita", labels = c("Alto","Médio", "Baixo")) +
+  labs(color = "Nível de Renda",
+       title = "Evolução do excesso de mortalidade em 2020",
+       subtitle = "por microrregião",
+       caption = "Fonte: MicroDataSUS e IBGE")
+
 COVID %>%
   filter(!is.na(wealth)) %>%
   group_by(wealth, MES_CMPT) %>% 
