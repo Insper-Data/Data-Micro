@@ -4,7 +4,7 @@ rm(list = ls())
 
 # Selecione o dirtorio a ser utilizado
 
-setwd('C:/Users/Pedro Saboia/Desktop/Insper Data')
+setwd('C:\\Users\\arthu\\Desktop\\InsperData\\COVID\\Oaxaca')
 
 # Pacotes utilizados
 
@@ -51,7 +51,7 @@ cnes <- cnes %>%
   select(-cod)
 
 pnad5 <- pnad05 %>%
-  select(Ano, UF, CAPITAL, V1013, Estrato, UPA, V1022, V1030, V1031, V1032, A001A, 
+  select(Ano, UF, CAPITAL, RM_RIDE, V1013, Estrato, UPA, V1022, V1030, V1031, V1032, A001A, 
          A002, A003, A004, A005, B0011, B0012, B0013, B0014, B0015, B0016, 
          B0017, B0018, B0019, B00110, B00111, B00112, B002, B0031, B0032, B0033,
          B0034, B0035, B0036, B0037, B0041, B0042, B0043, B0044, B0045, B0046, 
@@ -78,7 +78,7 @@ pnad5 <- pnad05 %>%
          )
 
 pnad6 <- pnad06 %>%
-  select(Ano, UF, CAPITAL, V1013, Estrato, UPA, V1022, V1030, V1031, V1032, A001A, 
+  select(Ano, UF, CAPITAL, RM_RIDE, V1013, Estrato, UPA, V1022, V1030, V1031, V1032, A001A, 
          A002, A003, A004, A005, B0011, B0012, B0013, B0014, B0015, B0016, 
          B0017, B0018, B0019, B00110, B00111, B00112, B002, B0031, B0032, B0033,
          B0034, B0035, B0036, B0037, B0041, B0042, B0043, B0044, B0045, B0046, 
@@ -105,7 +105,7 @@ pnad6 <- pnad06 %>%
   )
 
 pnad7 <- pnad07 %>% 
-  select(Ano, UF, CAPITAL, V1013, Estrato, UPA, V1022, V1030, V1031, V1032, A001A, 
+  select(Ano, UF, CAPITAL, RM_RIDE, V1013, Estrato, UPA, V1022, V1030, V1031, V1032, A001A, 
          A002, A003, A004, A005, B0011, B0012, B0013, B0014, B0015, B0016, 
          B0017, B0018, B0019, B00110, B00111, B00112, B002, B0031, B0032, B0033,
          B0034, B0035, B0036, B0037, B0041, B0042, B0043, B0044, B0045, B0046, 
@@ -132,7 +132,7 @@ pnad7 <- pnad07 %>%
   )
 
 pnad8 <- pnad08 %>%
-  select(Ano, UF, CAPITAL, V1013, Estrato, UPA, V1022, V1030, V1031, V1032, A001A, 
+  select(Ano, UF, CAPITAL, RM_RIDE, V1013, Estrato, UPA, V1022, V1030, V1031, V1032, A001A, 
          A002, A003, A004, A005, B0011, B0012, B0013, B0014, B0015, B0016, 
          B0017, B0018, B0019, B00110, B00111, B00112, B002, B0031, B0032, B0033,
          B0034, B0035, B0036, B0037, B0041, B0042, B0043, B0044, B0045, B0046, 
@@ -159,7 +159,7 @@ pnad8 <- pnad08 %>%
   )
 
 pnad9 <- pnad09 %>% 
-  select(Ano, UF, CAPITAL, V1013, Estrato, UPA, V1022, V1030, V1031, V1032, A001A, 
+  select(Ano, UF, CAPITAL, RM_RIDE, V1013, Estrato, UPA, V1022, V1030, V1031, V1032, A001A, 
          A002, A003, A004, A005, B0011, B0012, B0013, B0014, B0015, B0016, 
          B0017, B0018, B0019, B00110, B00111, B00112, B002, B0031, B0032, B0033,
          B0034, B0035, B0036, B0037, B0041, B0042, B0043, B0044, B0045, B0046, 
@@ -211,7 +211,11 @@ oaxaca <- pnad %>%
          suspeita = ifelse(soma >= 4, 1, 0),
          formal = ifelse(C007B == c(1,2), TRUE, FALSE))
 
+oaxaca2 <- oaxaca %>% 
+  filter(!is.na(formal)) %>% 
+  filter(!is.na(suspeita)) %>% 
+  filter(!is.na(RM_RIDE))
 
-oaxaca::oaxaca(suspeita ~ idade | formal , data = oaxaca)
+oaxaca::oaxaca(suspeita ~ idade + UF + capital + RM_RIDE + ua | formal , data = oaxaca2)
 
 #C007B <- Cartetira assindada
