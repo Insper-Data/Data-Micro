@@ -59,7 +59,7 @@ SIH_20 <- SIH_20 %>%
 
 # Base de dados com o PIB Municipal
 
-base_PIB <- read_excel("PIB_2010_2017.xlsx") %>% 
+base_PIB <- read_excel("~/Desktop/Insper Data/Bases/PIB_2010_2017.xlsx") %>% 
   filter(Ano == 2017) %>%
   rename(codigo_regiao = "Código da Grande Região", 
          regiao = "Nome da Grande Região",
@@ -78,6 +78,7 @@ base_PIB <- read_excel("PIB_2010_2017.xlsx") %>%
          nome_municipio, 
          nome_mesorregiao,
          nome_microrregiao, 
+         codigo_microrregiao,
          PIB)
 
 #===========================================================================================
@@ -140,7 +141,7 @@ mais65 <- age %>%
   select(c(POPULACAO:municipio)) %>% 
   left_join(base_PIB, by = c('municipio' = 'nome_municipio')) %>% 
   unique() %>% 
-  group_by(nome_microrregiao) %>% 
+  group_by(nome_microrregiao, codigo_microrregiao) %>% 
   summarise(POPULACAO = sum(POPULACAO),
             TOTAL = sum(TOTAL)) %>% 
   mutate(mais65 = POPULACAO / TOTAL) %>% 
@@ -171,8 +172,8 @@ mortes <- obitos %>%
   mutate(MES_CMPT = as.character(MES_CMPT)) %>% 
   left_join(covid_mensal, by = c('MUNIC_RES' = 'codmun')) %>% 
   left_join(base_PIB, by = c('municipio' = 'nome_municipio')) %>% 
-  filter(mes == 3)%>% 
-  group_by(MES_CMPT, nome_microrregiao) %>%
+  filter(mes == 3) %>% 
+  group_by(MES_CMPT, nome_microrregiao, codigo_microrregiao) %>%
   filter(!is.na(mortes_18),
          !is.na(mortes_19),
          !is.na(mortes_20)) %>% 
@@ -190,7 +191,7 @@ mortes <- obitos %>%
 
 dados_dataSUS_excesso <- covid_mensal %>% 
   left_join(base_PIB, by = c('municipio' = 'nome_municipio')) %>%  
-  group_by(nome_microrregiao, mes) %>% 
+  group_by(nome_microrregiao, codigo_microrregiao, mes) %>% 
   summarise(populacao = sum(populacao),
             casosAcumulado = sum(casosAcumulado),
             PIB = sum(PIB),
@@ -202,7 +203,7 @@ dados_dataSUS_excesso <- covid_mensal %>%
   mutate(casos_relativos = casosAcumulado / populacao,
          PIB_per_capita = PIB / populacao,
          ua = ifelse(metropolitana > 0.5, TRUE, FALSE)) %>% 
-  group_by(nome_microrregiao) %>% 
+  group_by(nome_microrregiao, codigo_microrregiao) %>% 
   summarise(volatilidade = sd(casos_relativos),
             PIB_per_capita = PIB_per_capita,
             regiao = regiao,
@@ -216,8 +217,8 @@ dados_dataSUS_excesso <- covid_mensal %>%
   arrange(desc(PIB_per_capita)) %>%
   mutate(wealth = ifelse(PIB_per_capita >= 27.364441, 'RICO',
                          ifelse(PIB_per_capita >= 14.771092, 'MEDIO', 'POBRE'))) %>% 
-  right_join(mortes, by = c('nome_microrregiao' = 'nome_microrregiao')) %>% 
-  left_join(mais65, by = c('nome_microrregiao' = 'nome_microrregiao')) %>%  
+  right_join(mortes, by = c('codigo_microrregiao' = 'codigo_microrregiao')) %>% 
+  left_join(mais65, by = c('codigo_microrregiao' = 'codigo_microrregiao')) %>%  
   mutate(infect = ifelse(volatilidade >= 0.006040925, "ALTA", "BAIXA"),
          corona = ifelse(MES_CMPT > 3, TRUE, FALSE)) %>% 
   mutate(alta = ifelse(wealth == "RICO", TRUE, FALSE),
@@ -225,9 +226,11 @@ dados_dataSUS_excesso <- covid_mensal %>%
          media = ifelse(wealth == "MEDIO", TRUE, FALSE),
          MES_CMPT = as.double(MES_CMPT)) %>%
   mutate(excesso_2 = excesso -1) %>% 
-  select(UF, regiao, nome_microrregiao, MES_CMPT, excesso, excesso_2, corona, wealth, ua, everything()) %>% 
+  select(UF, regiao, codigo_microrregiao, nome_microrregiao, MES_CMPT, excesso, excesso_2, corona, wealth, ua, everything()) %>% 
   select(-c(volatilidade, infect, mesorregiao)) %>% 
   rename("mes" = "MES_CMPT")
+
+write.xlsx(dados_dataSUS_excesso, "Dados_Datasus.xlsx")
 
 Acum <- covid_mensal %>% 
   left_join(base_PIB,by = c('municipio' = 'nome_municipio')) %>% 
