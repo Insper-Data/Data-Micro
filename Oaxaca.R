@@ -4,7 +4,7 @@ rm(list = ls())
 
 # Selecione o dirtorio a ser utilizado
 
-setwd('C:\\Users\\arthu\\Desktop\\InsperData\\COVID\\Oaxaca')
+setwd('C:/Users/Pedro Saboia/Desktop/Insper Data')
 
 # Pacotes utilizados
 
@@ -213,8 +213,9 @@ oaxaca <- pnad %>%
 
 oaxaca2 <- oaxaca %>% 
   filter(!is.na(formal)) %>% 
-  filter(!is.na(suspeita)) %>% 
-  filter(!is.na(RM_RIDE))
+  filter(!is.na(suspeita))
+
+write.xlsx(oaxaca2, "oaxaca.xlsx")
 
 oaxaca::oaxaca(suspeita ~ idade + UF + capital + RM_RIDE + ua | formal , data = oaxaca2)
 
