@@ -1,13 +1,19 @@
-#### Projeto Insper Data - Duque
-#Dados DataSus
+#===========================================================================================
+## Projeto Insper Data - Duque
+# Dados DataSus
+#===========================================================================================
 
 rm(list = ls())
 
+#===========================================================================================
 # Selecione o dirtorio a ser utilizado
+#===========================================================================================
 
 setwd('C:\\Users\\arthu\\Desktop\\InsperData\\COVID\\DiffDiff\\Data-Micro')
 
+#===========================================================================================
 # Pacotes utilizados
+#===========================================================================================
 
 library(dplyr)
 library(tidyverse)
@@ -17,6 +23,7 @@ library(readxl)
 library(lubridate)
 library(broom)
 library(openxlsx)
+
 #===========================================================================================
 ## Dados sobre mortalidade hospitalar
 #===========================================================================================
@@ -54,26 +61,26 @@ SIH_20 <- SIH_20 %>%
   summarise(mortes_20 = n())
 
 #===========================================================================================
-## Dados referentes ao PIB Muncipal 
+# Dados referentes ao PIB Muncipal 
+#===========================================================================================
+# Base de dados com o PIB Municipal
 #===========================================================================================
 
-# Base de dados com o PIB Municipal
-
-base_PIB <- read_excel("~/Desktop/Insper Data/Bases/PIB_2010_2017.xlsx") %>% 
+base_PIB <- read_excel("PIB_2010_2017.xlsx") %>% 
   filter(Ano == 2017) %>%
-  rename(codigo_regiao = "CÃ³digo da Grande RegiÃ£o", 
-         regiao = "Nome da Grande RegiÃ£o",
-         codigo_UF = "CÃ³digo da Unidade da FederaÃ§Ã£o",
-         UF = "Sigla da Unidade da FederaÃ§Ã£o",
-         nome_UF = "Nome da Unidade da FederaÃ§Ã£o",
-         codigo_municipio = "CÃ³digo do MunicÃ­pio",
-         nome_municipio = "Nome do MunicÃ­pio",
-         regiao_metropolitana = "RegiÃ£o Metropolitana",
-         codigo_mesorregiao = "CÃ³digo da MesorregiÃ£o",
-         nome_mesorregiao = "Nome da MesorregiÃ£o",
-         codigo_microrregiao = "CÃ³digo da MicrorregiÃ£o",
-         nome_microrregiao =  "Nome da MicrorregiÃ£o",
-         PIB = "Produto Interno Bruto, \r\na preÃ§os correntes\r\n(R$ 1.000)") %>%
+  rename(codigo_regiao = "Código da Grande Região", 
+         regiao = "Nome da Grande Região",
+         codigo_UF = "Código da Unidade da Federação",
+         UF = "Sigla da Unidade da Federação",
+         nome_UF = "Nome da Unidade da Federação",
+         codigo_municipio = "Código do Município",
+         nome_municipio = "Nome do Município",
+         regiao_metropolitana = "Região Metropolitana",
+         codigo_mesorregiao = "Código da Mesorregião",
+         nome_mesorregiao = "Nome da Mesorregião",
+         codigo_microrregiao = "Código da Microrregião",
+         nome_microrregiao =  "Nome da Microrregião",
+         PIB = "Produto Interno Bruto, \r\na preços correntes\r\n(R$ 1.000)") %>%
   select(regiao, UF, nome_UF, 
          nome_municipio, 
          nome_mesorregiao,
@@ -84,15 +91,17 @@ base_PIB <- read_excel("~/Desktop/Insper Data/Bases/PIB_2010_2017.xlsx") %>%
 #===========================================================================================
 ## Dados referentes a contaminacao por COVID-19
 #===========================================================================================
-
-# Base de dados bruta -> ultima atualizacao: 31/ago/2020
+# Base de dados bruta -> ultima atualizacao: 31/ago/2020                                 
+#===========================================================================================
 
 covid_bruto <- read_excel("HIST_PAINEL_COVIDBR_31ago2020_1.xlsx",
                           col_types = c('text', 'text', 'text','numeric','numeric','numeric',
                                         'text', 'date','numeric','numeric','numeric','numeric',
                                         'numeric','numeric','numeric','numeric','logical'))
 
+#===========================================================================================
 # Pegar apenas os dados referentes ao final de cada mes
+#===========================================================================================
 
 covid_mensal <- covid_bruto %>%
   filter(codmun != 0, 
@@ -114,11 +123,10 @@ covid_mensal <- covid_bruto %>%
   separate(mes, into = c('zero', 'mes'), sep = 1) %>%
   select(-c(ano, dia, zero)) 
 
-
-# Com essa base temos a populacao, o municipio, e indicador de zona urbana.   
-
 #===========================================================================================
-## Populacao acima de 65 anos
+# Com essa base temos a populacao, o municipio, e indicador de zona urbana.   
+#===========================================================================================
+# Populacao acima de 65 anos
 #===========================================================================================
 
 age <- read_csv("POPBR12.csv")
@@ -147,17 +155,19 @@ mais65 <- age %>%
   mutate(mais65 = POPULACAO / TOTAL) %>% 
   select(-c(POPULACAO:TOTAL))
 
-## Caso tenha os dados de mortalidade hospitalar no sistema 
+#===========================================================================================
+# Caso tenha os dados de mortalidade hospitalar no sistema 
 #===========================================================================================
 
 load("SIH_18.Rdata")
 load("SIH_19.Rdata")
 load("SIH_20.Rdata")
 
-## Agrupando e preparando
 #===========================================================================================
-
+# Agrupando e preparando
+#===========================================================================================
 # Dados hospitalares
+#===========================================================================================
 
 SIH_19 <- SIH_19_f 
 
@@ -184,10 +194,10 @@ mortes <- obitos %>%
   select(-c(mortes_18:mortes_20))
 
 #===========================================================================================
-## Juntando todos os dados em uma base
+# Juntando todos os dados em uma base
 #===========================================================================================
-
-# Juntando as bases em uma, para fazer as regressÃµes
+# Juntando as bases em uma, para fazer as regressões
+#===========================================================================================
 
 dados_dataSUS_excesso <- covid_mensal %>% 
   left_join(base_PIB, by = c('municipio' = 'nome_municipio')) %>%  
@@ -230,42 +240,28 @@ dados_dataSUS_excesso <- covid_mensal %>%
   select(-c(volatilidade, infect, mesorregiao)) %>% 
   rename("mes" = "MES_CMPT")
 
-write.xlsx(dados_dataSUS_excesso, "Dados_Datasus.xlsx")
-
-Acum <- covid_mensal %>% 
-  left_join(base_PIB,by = c('municipio' = 'nome_municipio')) %>% 
-  select(nome_microrregiao, codmun, mes, casosAcumulado) %>% 
-  filter(mes == 7) %>% 
-  group_by(nome_microrregiao) %>% 
-  summarise(casosAcumulado = sum(casosAcumulado))
-
-COVID_test <- COVID %>% 
-  filter(!is.na(nome_microrregiao)) %>% 
-  left_join(Acum, by = c("nome_microrregiao" = "nome_microrregiao")) %>% 
-  mutate(casos_per_capita = (casosAcumulado / populacao),
-         infec1 = ifelse(volatilidade >= median(COVID$volatilidade, na.rm = TRUE), "ALTA", "BAIXA"),
-         infec2 = ifelse(casos_per_capita >= 0.009373, "ALTA", "BAIXA"))
-
-median(COVID_test$casos_per_capita, na.rm = TRUE)
-median(COVID$volatilidade, na.rm = TRUE)
+write.xlsx(dados_dataSUS_excesso, "dados_dataSUS.xlsx")
 
 #===========================================================================================
-## Regressao hospitalar
+# Regressao hospitalar
 #===========================================================================================
 
 summary(lm(excesso ~ wealth*corona + wealth + corona + ua + mais65 + regiao + populacao, data = dados_dataSUS_excesso)) #com Efeitos Fixos de Regiao e sem Efeitos Fixos de Tempo
 
 summary(lm(excesso ~ wealth*corona + wealth + corona + ua + mais65 + UF + populacao, data = dados_dataSUS_excesso)) #com Efeitos Fixos de Unidade Federativa e sem Efeitos Fixos de Tempo
 
-summary(lm(excesso ~ wealth*corona + wealth + corona + ua + mais65 + populacao + MES_CMPT, data = dados_dataSUS_excesso)) #sem Efeitos Fixos de Regiao/UF e com Efeitos Fixos de Tempo
+summary(lm(excesso ~ wealth*corona + wealth + corona + ua + mais65 + populacao + mes, data = dados_dataSUS_excesso)) #sem Efeitos Fixos de Regiao/UF e com Efeitos Fixos de Tempo
 
-summary(lm(excesso ~ wealth*corona + wealth + corona + ua + mais65 + UF + populacao + MES_CMPT, data = dados_dataSUS_excesso)) #com Efeitos Fixos de Unidade Federativa e com Efeitos Fixos de Tempo
+summary(lm(excesso ~ wealth*corona + wealth + corona + ua + mais65 + UF + populacao + mes, data = dados_dataSUS_excesso)) #com Efeitos Fixos de Unidade Federativa e com Efeitos Fixos de Tempo
 
-summary(lm(excesso ~ wealth*corona + wealth + corona + ua + mais65 + regiao + populacao + MES_CMPT, data = dados_dataSUS_excesso)) #com Efeitos Fixos de Regiao e com Efeitos Fixos de Tempo
+summary(lm(excesso ~ wealth*corona + wealth + corona + ua + mais65 + regiao + populacao + mes, data = dados_dataSUS_excesso)) #com Efeitos Fixos de Regiao e com Efeitos Fixos de Tempo
 
-summary(lm(excesso_2 ~ wealth*corona + wealth + corona + ua + mais65 + regiao + populacao + MES_CMPT, data = dados_dataSUS_excesso)) #com Efeitos Fixos de Regiao e com Efeitos Fixos de Tempo
+summary(lm(excesso_2 ~ wealth*corona + wealth + corona + ua + mais65 + regiao + populacao + mes, data = dados_dataSUS_excesso)) #com Efeitos Fixos de Regiao e com Efeitos Fixos de Tempo
 
+#===========================================================================================
 # Regressao com efeitos fixos de regiao
+#===========================================================================================
+
 reg_regiao <- summary(lm(excesso ~ wealth*corona + wealth + corona + ua + mais65 + regiao + populacao + MES_CMPT, data = dados_dataSUS_excesso))
 
 tidy_reg_regiao <- tidy(reg_regiao)
@@ -273,7 +269,10 @@ tidy_reg_regiao
 
 write.csv(tidy_reg_regiao, "reg_regiao.csv")
 
+#===========================================================================================
 # Regressao com efeitos fixos de estado
+#===========================================================================================
+
 reg_UF <- (lm(excesso ~ wealth*corona + wealth + corona + ua + mais65 + UF + populacao + MES_CMPT, data = dados_dataSUS_excesso))
 reg_UF
 
@@ -281,3 +280,25 @@ tidy_reg_UF <- tidy(reg_UF)
 tidy_reg_UF
 
 write.csv(tidy_reg_UF, "reg_UF.csv")
+
+#===========================================================================================
+# Extra
+#===========================================================================================
+
+#Acum <- covid_mensal %>% 
+#left_join(base_PIB,by = c('municipio' = 'nome_municipio')) %>% 
+#  select(nome_microrregiao, codmun, mes, casosAcumulado) %>% 
+#  filter(mes == 7) %>% 
+#  group_by(nome_microrregiao) %>% 
+#  summarise(casosAcumulado = sum(casosAcumulado))
+
+#COVID_test <- COVID %>% 
+#  filter(!is.na(nome_microrregiao)) %>% 
+#  left_join(Acum, by = c("nome_microrregiao" = "nome_microrregiao")) %>% 
+#  mutate(casos_per_capita = (casosAcumulado / populacao),
+#         infec1 = ifelse(volatilidade >= median(COVID$volatilidade, na.rm = TRUE), "ALTA", "BAIXA"),
+#         infec2 = ifelse(casos_per_capita >= 0.009373, "ALTA", "BAIXA"))
+
+#median(COVID_test$casos_per_capita, na.rm = TRUE)
+#median(COVID$volatilidade, na.rm = TRUE)
+
