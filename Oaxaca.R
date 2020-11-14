@@ -33,13 +33,13 @@ pnad08 <- read.csv("PNAD_COVID_082020.csv")
 pnad09 <- read.csv("PNAD_COVID_092020.csv")
 
 ##########################################################################
-### Coletando dados do CNES
+### Coletando dados do CNES                                            ###
 ##########################################################################
 
 cnes <- read_excel("CNES_Final.xlsx") 
 
 ##########################################################################
-### Filtrando as bases
+### Filtrando as bases                                                 ###
 ##########################################################################
 
 cnes <- cnes %>%
@@ -131,6 +131,10 @@ pnad <- pnad5 %>%
   rbind(pnad8) %>% 
   rbind(pnad9)
 
+##########################################################################
+### Organizando a base principal                                       ###
+##########################################################################
+
 oaxaca <- pnad %>% 
   mutate(febre = ifelse(febre == 1, 1, ifelse(febre == 2, 0, NA)),
          tosse = ifelse(tosse == 1, 1, ifelse(tosse == 2, 0, NA)),
@@ -160,7 +164,15 @@ oaxaca_stata <- oaxaca %>%
   filter(!is.na(formal)) %>% 
   filter(!is.na(suspeita))
 
+##########################################################################
+### Realizando as estimacoes por Oaxaca Blinder                        ###
+##########################################################################
+
 oaxaca::oaxaca(suspeita ~ idade + UF + capital + V1023 + ua + formal| formal , data = oaxaca2)
+
+##########################################################################
+### Salvando as bases                                                  ###
+##########################################################################
 
 write.xlsx(oaxaca_stata, "oaxaca.xlsx")
 
