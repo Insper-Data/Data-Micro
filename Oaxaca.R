@@ -51,147 +51,85 @@ cnes <- cnes %>%
   select(-cod)
 
 pnad5 <- pnad05 %>%
-  select(Ano, UF, CAPITAL, RM_RIDE, V1013, Estrato, UPA, V1022, V1030, V1031, V1032, A001A, 
-         A002, A003, A004, A005, B0011, B0012, B0013, B0014, B0015, B0016, 
-         B0017, B0018, B0019, B00110, B00111, B00112, B002, B0031, B0032, B0033,
-         B0034, B0035, B0036, B0037, B0041, B0042, B0043, B0044, B0045, B0046, 
-         B005, B006, B007, C001, C002, C003, C004, C005, C0051, C0052, C0053, 
-         C006, C007, C007A, C007B, C007C, C007D, C007E, C007E1, C007E2, C008, 
-         C009, C010, C0101, C01011, C01012, C0102, C01021, C01022, C0103, C0104,
-         C011A1, C011A11, C011A12, C011A12, C011A2, C011A21, C011A22, C012, C013,
-         C014, C015, C016, C017A, D0011, D0013, D0021, D0023, D0031, D0033, D0041,
-         D0043, D0051, D0053, D0061, D0063, D0071, D0073, F001, F0021, F0022, 
-         F0061, F006) %>% 
-  rename(capital = CAPITAL, mes = V1013, ua = V1022, proj_pop = V1030, condicao_dom = A001A,
-         idade = A002, sexo = A003, raca = A004, escolaridade = A005, febre = B0011,
-         tosse = B0012, dorgarganta = B0013, dificu_respiratoria = B0014, 
-         dorcabeca = B0015, dorpeito = B0016, nausea = B0017,
+  select(Ano, UF, V1013, Estrato, UPA, V1022, V1023, A002, A003, A004, A005, B0011, B0012, 
+         B0013, B0014, B0015, B0016, B0017, B0018, B0019, B00110, B00111, B00112, 
+         C007B, C007C, C007D, C008, C010, C01011, C01012, C013, C014, D0011, D0013,
+         D0031, D0033, D0051, D0053) %>%
+  rename(ano = Ano, mes = V1013, ua = V1022, RM = V1023, idade = A002, sexo = A003, raca = A004, 
+         escolaridade = A005, febre = B0011, tosse = B0012, dorgarganta = B0013,
+         dificu_respiratoria = B0014, dorcabeca = B0015, dorpeito = B0016, nausea = B0017,
          narizentupido = B0018, fadiga = B0019, dorolhos = B00110,
-         perdeucheiro = B00111, dormuscular = B00112, estab_saude = B002,
-         ficou_casa = B0031, ligou_prof = B0032, tomou_remed_soz = B0033, tomou_remed_med = B0034,
-         receb_prof_SUS = B0035, receb_prof_priv = B0036, outra_providencia = B0037, 
-         postosaude_atend = B0041, PS_SUS_UPA_atend = B0042, hosp_SUS_atend = B0043, 
-         ambul_priv_atend = B0044, priv_atend = B0046, internado = B005, inter_sedado = B006, 
-         planosaude_priv = B007, trabalhou = C001, afastado = C002, motivo_afast = C003, 
-         cont_remunerado = C004, tempo_afastado = C005, tempo_afastado_2 = C0051, 
-         tempo_afastado_3 = C0052, tempo_afastado_4 = C0053, mais_trabalho = C006,
-         )
+         perdeucheiro = B00111, dormuscular = B00112, carteira = C007B, tipo_trabalho = C007C,
+         tipo_setor = C007D, horas_trabalho = C008, recebia = C010, quanto_recebia = C01011,
+         valor_recebia = C01012, home_office = C013, INSS = C014, aposentado = D0011,
+         quanto_aposentado = D0013, bolsa_familia = D0031, quanto_bf = D0033, 
+         auxilio_emergencial = D0051, quanto_ae = D0053)
 
 pnad6 <- pnad06 %>%
-  select(Ano, UF, CAPITAL, RM_RIDE, V1013, Estrato, UPA, V1022, V1030, V1031, V1032, A001A, 
-         A002, A003, A004, A005, B0011, B0012, B0013, B0014, B0015, B0016, 
-         B0017, B0018, B0019, B00110, B00111, B00112, B002, B0031, B0032, B0033,
-         B0034, B0035, B0036, B0037, B0041, B0042, B0043, B0044, B0045, B0046, 
-         B005, B006, B007, C001, C002, C003, C004, C005, C0051, C0052, C0053, 
-         C006, C007, C007A, C007B, C007C, C007D, C007E, C007E1, C007E2, C008, 
-         C009, C010, C0101, C01011, C01012, C0102, C01021, C01022, C0103, C0104,
-         C011A1, C011A11, C011A12, C011A12, C011A2, C011A21, C011A22, C012, C013,
-         C014, C015, C016, C017A, D0011, D0013, D0021, D0023, D0031, D0033, D0041,
-         D0043, D0051, D0053, D0061, D0063, D0071, D0073, F001, F0021, F0022, 
-         F0061, F006) %>% 
-  rename(capital = CAPITAL, mes = V1013, ua = V1022, proj_pop = V1030, condicao_dom = A001A,
-         idade = A002, sexo = A003, raca = A004, escolaridade = A005, febre = B0011,
-         tosse = B0012, dorgarganta = B0013, dificu_respiratoria = B0014, 
-         dorcabeca = B0015, dorpeito = B0016, nausea = B0017,
+  select(Ano, UF, V1013, Estrato, UPA, V1022, V1023, A002, A003, A004, A005, B0011, B0012, 
+         B0013, B0014, B0015, B0016, B0017, B0018, B0019, B00110, B00111, B00112, 
+         C007B, C007C, C007D, C008, C010, C01011, C01012, C013, C014, D0011, D0013,
+         D0031, D0033, D0051, D0053) %>%
+  rename(ano = Ano, mes = V1013, ua = V1022, RM = V1023, idade = A002, sexo = A003, raca = A004, 
+         escolaridade = A005, febre = B0011, tosse = B0012, dorgarganta = B0013,
+         dificu_respiratoria = B0014, dorcabeca = B0015, dorpeito = B0016, nausea = B0017,
          narizentupido = B0018, fadiga = B0019, dorolhos = B00110,
-         perdeucheiro = B00111, dormuscular = B00112, estab_saude = B002,
-         ficou_casa = B0031, ligou_prof = B0032, tomou_remed_soz = B0033, tomou_remed_med = B0034,
-         receb_prof_SUS = B0035, receb_prof_priv = B0036, outra_providencia = B0037, 
-         postosaude_atend = B0041, PS_SUS_UPA_atend = B0042, hosp_SUS_atend = B0043, 
-         ambul_priv_atend = B0044, priv_atend = B0046, internado = B005, inter_sedado = B006, 
-         planosaude_priv = B007, trabalhou = C001, afastado = C002, motivo_afast = C003, 
-         cont_remunerado = C004, tempo_afastado = C005, tempo_afastado_2 = C0051, 
-         tempo_afastado_3 = C0052, tempo_afastado_4 = C0053, mais_trabalho = C006,
-  )
+         perdeucheiro = B00111, dormuscular = B00112, carteira = C007B, tipo_trabalho = C007C,
+         tipo_setor = C007D, horas_trabalho = C008, recebia = C010, quanto_recebia = C01011,
+         valor_recebia = C01012, home_office = C013, INSS = C014, aposentado = D0011,
+         quanto_aposentado = D0013, bolsa_familia = D0031, quanto_bf = D0033, 
+         auxilio_emergencial = D0051, quanto_ae = D0053)
 
 pnad7 <- pnad07 %>% 
-  select(Ano, UF, CAPITAL, RM_RIDE, V1013, Estrato, UPA, V1022, V1030, V1031, V1032, A001A, 
-         A002, A003, A004, A005, B0011, B0012, B0013, B0014, B0015, B0016, 
-         B0017, B0018, B0019, B00110, B00111, B00112, B002, B0031, B0032, B0033,
-         B0034, B0035, B0036, B0037, B0041, B0042, B0043, B0044, B0045, B0046, 
-         B005, B006, B007, C001, C002, C003, C004, C005, C0051, C0052, C0053, 
-         C006, C007, C007A, C007B, C007C, C007D, C007E, C007E1, C007E2, C008, 
-         C009, C010, C0101, C01011, C01012, C0102, C01021, C01022, C0103, C0104,
-         C011A1, C011A11, C011A12, C011A12, C011A2, C011A21, C011A22, C012, C013,
-         C014, C015, C016, C017A, D0011, D0013, D0021, D0023, D0031, D0033, D0041,
-         D0043, D0051, D0053, D0061, D0063, D0071, D0073, F001, F0021, F0022, 
-         F0061, F006) %>% 
-  rename(capital = CAPITAL, mes = V1013, ua = V1022, proj_pop = V1030, condicao_dom = A001A,
-         idade = A002, sexo = A003, raca = A004, escolaridade = A005, febre = B0011,
-         tosse = B0012, dorgarganta = B0013, dificu_respiratoria = B0014, 
-         dorcabeca = B0015, dorpeito = B0016, nausea = B0017,
+  select(Ano, UF, V1013, Estrato, UPA, V1022, V1023, A002, A003, A004, A005, B0011, B0012, 
+         B0013, B0014, B0015, B0016, B0017, B0018, B0019, B00110, B00111, B00112, 
+         C007B, C007C, C007D, C008, C010, C01011, C01012, C013, C014, D0011, D0013,
+         D0031, D0033, D0051, D0053) %>%
+  rename(ano = Ano, mes = V1013, ua = V1022, RM = V1023, idade = A002, sexo = A003, raca = A004, 
+         escolaridade = A005, febre = B0011, tosse = B0012, dorgarganta = B0013,
+         dificu_respiratoria = B0014, dorcabeca = B0015, dorpeito = B0016, nausea = B0017,
          narizentupido = B0018, fadiga = B0019, dorolhos = B00110,
-         perdeucheiro = B00111, dormuscular = B00112, estab_saude = B002,
-         ficou_casa = B0031, ligou_prof = B0032, tomou_remed_soz = B0033, tomou_remed_med = B0034,
-         receb_prof_SUS = B0035, receb_prof_priv = B0036, outra_providencia = B0037, 
-         postosaude_atend = B0041, PS_SUS_UPA_atend = B0042, hosp_SUS_atend = B0043, 
-         ambul_priv_atend = B0044, priv_atend = B0046, internado = B005, inter_sedado = B006, 
-         planosaude_priv = B007, trabalhou = C001, afastado = C002, motivo_afast = C003, 
-         cont_remunerado = C004, tempo_afastado = C005, tempo_afastado_2 = C0051, 
-         tempo_afastado_3 = C0052, tempo_afastado_4 = C0053, mais_trabalho = C006,
-  )
+         perdeucheiro = B00111, dormuscular = B00112, carteira = C007B, tipo_trabalho = C007C,
+         tipo_setor = C007D, horas_trabalho = C008, recebia = C010, quanto_recebia = C01011,
+         valor_recebia = C01012, home_office = C013, INSS = C014, aposentado = D0011,
+         quanto_aposentado = D0013, bolsa_familia = D0031, quanto_bf = D0033, 
+         auxilio_emergencial = D0051, quanto_ae = D0053)
 
 pnad8 <- pnad08 %>%
-  select(Ano, UF, CAPITAL, RM_RIDE, V1013, Estrato, UPA, V1022, V1030, V1031, V1032, A001A, 
-         A002, A003, A004, A005, B0011, B0012, B0013, B0014, B0015, B0016, 
-         B0017, B0018, B0019, B00110, B00111, B00112, B002, B0031, B0032, B0033,
-         B0034, B0035, B0036, B0037, B0041, B0042, B0043, B0044, B0045, B0046, 
-         B005, B006, B007, C001, C002, C003, C004, C005, C0051, C0052, C0053, 
-         C006, C007, C007A, C007B, C007C, C007D, C007E, C007E1, C007E2, C008, 
-         C009, C010, C0101, C01011, C01012, C0102, C01021, C01022, C0103, C0104,
-         C011A1, C011A11, C011A12, C011A12, C011A2, C011A21, C011A22, C012, C013,
-         C014, C015, C016, C017A, D0011, D0013, D0021, D0023, D0031, D0033, D0041,
-         D0043, D0051, D0053, D0061, D0063, D0071, D0073, F001, F0021, F0022, 
-         F0061, F006) %>% 
-  rename(capital = CAPITAL, mes = V1013, ua = V1022, proj_pop = V1030, condicao_dom = A001A,
-         idade = A002, sexo = A003, raca = A004, escolaridade = A005, febre = B0011,
-         tosse = B0012, dorgarganta = B0013, dificu_respiratoria = B0014, 
-         dorcabeca = B0015, dorpeito = B0016, nausea = B0017,
+  select(Ano, UF, V1013, Estrato, UPA, V1022, V1023, A002, A003, A004, A005, B0011, B0012, 
+         B0013, B0014, B0015, B0016, B0017, B0018, B0019, B00110, B00111, B00112, 
+         C007B, C007C, C007D, C008, C010, C01011, C01012, C013, C014, D0011, D0013,
+         D0031, D0033, D0051, D0053) %>%
+  rename(ano = Ano, mes = V1013, ua = V1022, RM = V1023, idade = A002, sexo = A003, raca = A004, 
+         escolaridade = A005, febre = B0011, tosse = B0012, dorgarganta = B0013,
+         dificu_respiratoria = B0014, dorcabeca = B0015, dorpeito = B0016, nausea = B0017,
          narizentupido = B0018, fadiga = B0019, dorolhos = B00110,
-         perdeucheiro = B00111, dormuscular = B00112, estab_saude = B002,
-         ficou_casa = B0031, ligou_prof = B0032, tomou_remed_soz = B0033, tomou_remed_med = B0034,
-         receb_prof_SUS = B0035, receb_prof_priv = B0036, outra_providencia = B0037, 
-         postosaude_atend = B0041, PS_SUS_UPA_atend = B0042, hosp_SUS_atend = B0043, 
-         ambul_priv_atend = B0044, priv_atend = B0046, internado = B005, inter_sedado = B006, 
-         planosaude_priv = B007, trabalhou = C001, afastado = C002, motivo_afast = C003, 
-         cont_remunerado = C004, tempo_afastado = C005, tempo_afastado_2 = C0051, 
-         tempo_afastado_3 = C0052, tempo_afastado_4 = C0053, mais_trabalho = C006,
-  )
+         perdeucheiro = B00111, dormuscular = B00112, carteira = C007B, tipo_trabalho = C007C,
+         tipo_setor = C007D, horas_trabalho = C008, recebia = C010, quanto_recebia = C01011,
+         valor_recebia = C01012, home_office = C013, INSS = C014, aposentado = D0011,
+         quanto_aposentado = D0013, bolsa_familia = D0031, quanto_bf = D0033, 
+         auxilio_emergencial = D0051, quanto_ae = D0053)
 
 pnad9 <- pnad09 %>% 
-  select(Ano, UF, CAPITAL, RM_RIDE, V1013, Estrato, UPA, V1022, V1030, V1031, V1032, A001A, 
-         A002, A003, A004, A005, B0011, B0012, B0013, B0014, B0015, B0016, 
-         B0017, B0018, B0019, B00110, B00111, B00112, B002, B0031, B0032, B0033,
-         B0034, B0035, B0036, B0037, B0041, B0042, B0043, B0044, B0045, B0046, 
-         B005, B006, B007, C001, C002, C003, C004, C005, C0051, C0052, C0053, 
-         C006, C007, C007A, C007B, C007C, C007D, C007E, C007E1, C007E2, C008, 
-         C009, C010, C0101, C01011, C01012, C0102, C01021, C01022, C0103, C0104,
-         C011A1, C011A11, C011A12, C011A12, C011A2, C011A21, C011A22, C012, C013,
-         C014, C015, C016, C017A, D0011, D0013, D0021, D0023, D0031, D0033, D0041,
-         D0043, D0051, D0053, D0061, D0063, D0071, D0073, F001, F0021, F0022, 
-         F0061, F006) %>% 
-  rename(capital = CAPITAL, mes = V1013, ua = V1022, proj_pop = V1030, condicao_dom = A001A,
-         idade = A002, sexo = A003, raca = A004, escolaridade = A005, febre = B0011,
-         tosse = B0012, dorgarganta = B0013, dificu_respiratoria = B0014, 
-         dorcabeca = B0015, dorpeito = B0016, nausea = B0017,
+  select(Ano, UF, V1013, Estrato, UPA, V1022, V1023, A002, A003, A004, A005, B0011, B0012, 
+         B0013, B0014, B0015, B0016, B0017, B0018, B0019, B00110, B00111, B00112, 
+         C007B, C007C, C007D, C008, C010, C01011, C01012, C013, C014, D0011, D0013,
+         D0031, D0033, D0051, D0053) %>%
+  rename(ano = Ano, mes = V1013, ua = V1022, RM = V1023, idade = A002, sexo = A003, raca = A004, 
+         escolaridade = A005, febre = B0011, tosse = B0012, dorgarganta = B0013,
+         dificu_respiratoria = B0014, dorcabeca = B0015, dorpeito = B0016, nausea = B0017,
          narizentupido = B0018, fadiga = B0019, dorolhos = B00110,
-         perdeucheiro = B00111, dormuscular = B00112, estab_saude = B002,
-         ficou_casa = B0031, ligou_prof = B0032, tomou_remed_soz = B0033, tomou_remed_med = B0034,
-         receb_prof_SUS = B0035, receb_prof_priv = B0036, outra_providencia = B0037, 
-         postosaude_atend = B0041, PS_SUS_UPA_atend = B0042, hosp_SUS_atend = B0043, 
-         ambul_priv_atend = B0044, priv_atend = B0046, internado = B005, inter_sedado = B006, 
-         planosaude_priv = B007, trabalhou = C001, afastado = C002, motivo_afast = C003, 
-         cont_remunerado = C004, tempo_afastado = C005, tempo_afastado_2 = C0051, 
-         tempo_afastado_3 = C0052, tempo_afastado_4 = C0053, mais_trabalho = C006,
-  )
+         perdeucheiro = B00111, dormuscular = B00112, carteira = C007B, tipo_trabalho = C007C,
+         tipo_setor = C007D, horas_trabalho = C008, recebia = C010, quanto_recebia = C01011,
+         valor_recebia = C01012, home_office = C013, INSS = C014, aposentado = D0011,
+         quanto_aposentado = D0013, bolsa_familia = D0031, quanto_bf = D0033, 
+         auxilio_emergencial = D0051, quanto_ae = D0053)
 
 pnad <- pnad5 %>% 
   rbind(pnad6) %>% 
   rbind(pnad7) %>% 
   rbind(pnad8) %>% 
   rbind(pnad9)
-
-
 
 oaxaca <- pnad %>% 
   mutate(febre = ifelse(febre == 1, 1, ifelse(febre == 2, 0, NA)),
@@ -209,13 +147,21 @@ oaxaca <- pnad %>%
   mutate(soma = febre + tosse + dorgarganta + dificu_respiratoria + dorcabeca + dorpeito + 
                 nausea + narizentupido + fadiga + dorolhos + perdeucheiro + dormuscular,
          suspeita = ifelse(soma >= 4, 1, 0),
-         formal = ifelse(C007B == c(1,2), TRUE, FALSE))
+         formal = ifelse(carteira == c(1,2), TRUE, FALSE),
+         RM = as.factor(RM))
 
-oaxaca2 <- oaxaca %>% 
+oaxaca_teste <- oaxaca %>% 
+  filter(is.na(suspeita))
+
+oaxaca_teste_2 <- oaxaca %>% 
+  filter(is.na(formal))
+
+oaxaca_stata <- oaxaca %>% 
   filter(!is.na(formal)) %>% 
-  filter(!is.na(suspeita)) %>% 
-  filter(!is.na(RM_RIDE))
+  filter(!is.na(suspeita))
 
-oaxaca::oaxaca(suspeita ~ idade + UF + capital + RM_RIDE + ua | formal , data = oaxaca2)
+oaxaca::oaxaca(suspeita ~ idade + UF + capital + V1023 + ua + formal| formal , data = oaxaca2)
 
-#C007B <- Cartetira assindada
+write.xlsx(oaxaca_stata, "oaxaca.xlsx")
+
+
