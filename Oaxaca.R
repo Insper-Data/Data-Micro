@@ -145,7 +145,7 @@ oaxaca <- pnad %>%
          perdeucheiro = ifelse(perdeucheiro == 1, 1, ifelse(perdeucheiro == 2, 0, NA)),
          dormuscular = ifelse(dormuscular == 1, 1, ifelse(dormuscular == 2, 0, NA))) %>% 
   mutate(soma = febre + tosse + dorgarganta + dificu_respiratoria + dorcabeca + dorpeito + 
-                nausea + narizentupido + fadiga + dorolhos + perdeucheiro + dormuscular,
+           nausea + narizentupido + fadiga + dorolhos + perdeucheiro + dormuscular,
          suspeita = ifelse(soma >= 4, 1, 0),
          formal = ifelse(carteira == c(1,2), TRUE, FALSE),
          RM = as.factor(RM))
@@ -163,5 +163,6 @@ oaxaca_stata <- oaxaca %>%
 oaxaca::oaxaca(suspeita ~ idade + UF + capital + V1023 + ua + formal| formal , data = oaxaca2)
 
 write.xlsx(oaxaca_stata, "oaxaca.xlsx")
+
 
 
