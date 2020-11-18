@@ -217,7 +217,7 @@ load("SIH_20.Rdata")
 
 # Dados hospitalares
 
-SIH_19 <- SIH_19_f 
+SIH_19 <- SIH_19 
 
 obitos <- SIH_18 %>% 
   left_join(SIH_19, by = c('MES_CMPT' = 'MES_CMPT', 'MUNIC_RES' = 'MUNIC_RES')) %>% 
@@ -412,7 +412,7 @@ write.csv(tidy_reg_UF, "reg_UF.csv")
 ## Regressao CONASS
 #===========================================================================================
 
-summary(lm(excesso_conass_2 ~ wealth*corona + ua + mais65 + UF + populacao + mes, data = base_CONASS))
+summary(lm(excesso_conass ~ wealth*corona + ua + mais65 + UF + populacao + mes, data = base_CONASS))
 
 # Grafico de Excesso de Mortalidade
 COVID %>%
