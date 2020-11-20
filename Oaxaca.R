@@ -1,12 +1,17 @@
-#### Projeto Insper Data - Duque - Oaxaca Blinder
+#### Projeto Insper Data - Duque - Oaxaca Blinder                      ###
+##########################################################################
 
 rm(list = ls())
 
-# Selecione o dirtorio a ser utilizado
+##########################################################################
+### Selecione o dirtorio a ser utilizado                               ###
+##########################################################################
 
 setwd('C:\\Users\\arthu\\Desktop\\InsperData\\COVID\\Oaxaca')
 
-# Pacotes utilizados
+##########################################################################
+### Pacotes utilizados                                                 ###
+##########################################################################
 
 library(dplyr)
 library(tidyverse)
@@ -19,7 +24,7 @@ library(openxlsx)
 library(oaxaca)
 
 ##########################################################################
-### Coletando dados da PNAD COVID
+### Coletando dados da PNAD COVID                                      ###
 ##########################################################################
 
 pnad05 <- read.csv("PNAD_COVID_052020.csv")
@@ -37,6 +42,27 @@ pnad09 <- read.csv("PNAD_COVID_092020.csv")
 ##########################################################################
 
 cnes <- read_excel("CNES_Final.xlsx") 
+
+base_PIB <- read_excel("PIB_2010_2017.xlsx") %>% 
+  filter(Ano == 2017) %>%
+  rename(codigo_regiao = "Código da Grande Região", 
+         regiao = "Nome da Grande Região",
+         codigo_UF = "Código da Unidade da Federação",
+         UF = "Sigla da Unidade da Federação",
+         nome_UF = "Nome da Unidade da Federação",
+         codigo_municipio = "Código do Município",
+         nome_municipio = "Nome do Município",
+         regiao_metropolitana = "Região Metropolitana",
+         codigo_mesorregiao = "Código da Mesorregião",
+         nome_mesorregiao = "Nome da Mesorregião",
+         codigo_microrregiao = "Código da Microrregião",
+         nome_microrregiao =  "Nome da Microrregião",
+         PIB = "Produto Interno Bruto, \r\na preços correntes\r\n(R$ 1.000)") %>%
+  select(regiao, UF, 
+         nome_municipio,
+         nome_microrregiao, 
+         codigo_microrregiao,
+         codigo_municipio)
 
 ##########################################################################
 ### Filtrando as bases                                                 ###
@@ -154,21 +180,38 @@ oaxaca <- pnad %>%
          formal = ifelse(carteira == c(1,2), TRUE, FALSE),
          RM = as.factor(RM))
 
-oaxaca_teste <- oaxaca %>% 
-  filter(is.na(suspeita))
-
-oaxaca_teste_2 <- oaxaca %>% 
-  filter(is.na(formal))
-
 oaxaca_stata <- oaxaca %>% 
   filter(!is.na(formal)) %>% 
   filter(!is.na(suspeita))
 
 ##########################################################################
-### Realizando as estimacoes por Oaxaca Blinder                        ###
+### Construindo base CNES                                              ###
 ##########################################################################
 
-oaxaca::oaxaca(suspeita ~ idade + UF + capital + V1023 + ua + formal| formal , data = oaxaca2)
+CNES <- base_PIB %>% 
+  separate(codigo_municipio, into = c("codigo_municipio", "extra"), sep = -1) %>% 
+  left_join(cnes, by = c("codigo_municipio" = "mun_cod")) %>% 
+  select(-c(extra, mun_nome)) %>% 
+  rename(mes = Mes,
+         leitos_amb_ped = "Leito_Amb_Rep/Obs_Ped",
+         leitos_amb_indif = "Leito_Amb_Rep/Obs_Indif",
+         leitos_amb_fem = "Leito_Amb_Rep/Obs_Fem",
+         leitos_amb_masc = "Leito_Amb_Rep/Obs_Masc",
+         leitos_urg_ped = "Leito_Urg_Rep/Obs_Ped",
+         leitos_urg_indif = "Leito_Urg_Rep/Obs_Indif",
+         leitos_urg_fem = "Leito_Urg_Rep/Obs_Fem",
+         leitos_urg_masc = "Leito_Urg_Rep/Obs_Masc") %>% 
+  mutate(leitos_amb_total = leitos_amb_ped + leitos_amb_indif + leitos_amb_fem + leitos_amb_masc,
+         leitos_urg_total = leitos_urg_ped + leitos_urg_indif + leitos_urg_fem + leitos_urg_masc) %>% 
+  filter(!is.na(mes)) %>% 
+  group_by(codigo_microrregiao, nome_microrregiao, mes) %>% 
+  summarise(leito_int_total = sum(Leito_Int_Total),
+            leito_amb_total = sum(leitos_amb_total),
+            leito_urg_total = sum(leitos_urg_total),
+            equipamentos_existentes = sum(Equipamentos_Existentes),
+            equipamentos_uso = sum(Equipamentos_em_Uso),
+            leito_comp_SUS = sum(Leito_Complementar_SUS),
+            leito_comp_nao_SUS = sum(Leito_Complementar_Nao_SUS))
 
 ##########################################################################
 ### Salvando as bases                                                  ###
@@ -176,5 +219,10 @@ oaxaca::oaxaca(suspeita ~ idade + UF + capital + V1023 + ua + formal| formal , d
 
 write.xlsx(oaxaca_stata, "oaxaca.xlsx")
 
+write.xlsx(CNES, "CNES.xlsx")
 
+##########################################################################
+### Realizando as estimacoes por Oaxaca Blinder                        ###
+##########################################################################
 
+oaxaca::oaxaca(suspeita ~ idade + UF + capital + V1023 + ua + formal| formal , data = oaxaca)
