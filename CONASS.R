@@ -298,4 +298,3 @@ summary(lm(excesso_conass_2 ~ wealth*corona + wealth + leito_int_total + leito_a
 write.xlsx(CONASS, "CONASS.xlsx")
 
 
-
