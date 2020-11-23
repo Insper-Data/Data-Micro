@@ -326,4 +326,52 @@ summary(lm(excesso_conass_2 ~ wealth*corona + wealth + leito_int_total + leito_a
 
 write.xlsx(CONASS, "CONASS.xlsx")
 
+#===========================================================================================
+## Dados municipais
+#===========================================================================================
+
+conass_municipio <- conass %>%
+  mutate(excesso_conass = obitos_20 / ((obitos_18 + obitos_19) / 2)) %>%
+  left_join(base_PIB, by = c('municipio' = 'nome_municipio', 'UF' = 'UF')) %>%
+  separate(codigo_municipio, into = c('codigo_municipio', 'extra'), sep = -1) %>%
+  mutate(codigo_municipio = as.double(codigo_municipio)) %>% 
+  select(-extra) %>% 
+  left_join(covid_mensal, by = c('codigo_municipio' = 'codmun')) %>% 
+  select(codigo_municipio, municipio.x, nome_microrregiao, UF, regiao, mes.x, 
+         PIB, populacao, casosAcumulado, metropolitana, excesso_conass, obitos_18, 
+         obitos_19, obitos_20) %>% 
+  rename(municipio = municipio.x,
+         mes = mes.x) %>% 
+  mutate(mortes_relativas = excesso_conass - 1,
+         PIB_per_capita = PIB / populacao,
+         casos_relativos = casosAcumulado / populacao) %>% 
+  filter(!is.na(PIB_per_capita),
+         mortes_relativas != Inf) %>% 
+  mutate(wealth = ifelse(PIB_per_capita >= 23.49736, 'RICO',
+                         ifelse(PIB_per_capita >= 11.80415, 'MEDIO', 'POBRE')),
+         corona = ifelse(mes > 3, TRUE, FALSE)) %>% 
+  left_join(mais65_mun, by = c('municipio' = 'municipio'))
+View()
+
+quantile(conass_municipio$PIB_per_capita, probs =  c(0, 1/3, 2/3, 1))
+
+conass_municipio %>%
+  group_by(wealth, mes) %>% 
+  summarise(excesso = mean(mortes_relativas) - 1,
+            sd = sd(mortes_relativas)) %>%
+  ggplot() + 
+  geom_line(aes(as.factor(mes), excesso, group = wealth, color = wealth), size = 2) +
+  theme_classic() +
+  ylab("Excesso de mortalidade relativo") + 
+  xlab("Mês") +
+  scale_colour_discrete(name = "Nível de PIB per capita") +
+  labs(color = "Nível de Renda",
+       title = "Evolução do excesso de mortalidade em 2020",
+       subtitle = "por microrregião",
+       caption = "Fonte: MicroDataSUS e IBGE")
+
+
+summary(lm(mortes_relativas ~ wealth*corona + mais65 + populacao + mes + UF, data = conass_municipio))
+
+
 
