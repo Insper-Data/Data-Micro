@@ -122,7 +122,9 @@ covid_mensal <- covid_bruto %>%
          metropolitana = `interior/metropolitana`) %>% 
   separate(data, into = c('ano', 'mes', 'dia'), sep = "-") %>% 
   separate(mes, into = c('zero', 'mes'), sep = 1) %>%
-  select(-c(ano, dia, zero)) 
+  select(-c(ano, dia, zero)) %>% 
+  mutate(pop_interior = ifelse(metropolitana == FALSE, populacao, 0),
+         pop_urbana = ifelse(metropolitana == TRUE, populacao, 0))
 
 #===========================================================================================
 # Com essa base temos a populacao, o municipio, e indicador de zona urbana.   
@@ -206,6 +208,8 @@ dados_dataSUS_excesso <- covid_mensal %>%
   summarise(populacao = sum(populacao),
             casosAcumulado = sum(casosAcumulado),
             PIB = sum(PIB),
+            interior = sum(pop_interior),
+            urbana = sum(pop_urbana),
             regiao = regiao,
             metropolitana = mean(metropolitana),
             UF = UF,
@@ -241,6 +245,9 @@ dados_dataSUS_excesso <- covid_mensal %>%
   select(-c(volatilidade, infect, mesorregiao)) %>% 
   rename("mes" = "MES_CMPT")
 
+dados_dataSUS_excesso <- dados_dataSUS_excesso %>% 
+  mutate(p_interior = pop_interior/populacao, p_urbana = pop_urbana/populacao)
+
 write.xlsx(dados_dataSUS_excesso, "dados_dataSUS.xlsx")
 
 #===========================================================================================
@@ -263,7 +270,7 @@ summary(lm(excesso_2 ~ wealth*corona + wealth + corona + ua + mais65 + regiao + 
 # Regressao com efeitos fixos de regiao
 #===========================================================================================
 
-reg_regiao <- summary(lm(excesso ~ wealth*corona + wealth + corona + ua + mais65 + regiao + populacao + MES_CMPT, data = dados_dataSUS_excesso))
+reg_regiao <- summary(lm(excesso ~ wealth*corona + wealth + corona + ua + mais65 + regiao + populacao + mes, data = dados_dataSUS_excesso))
 
 tidy_reg_regiao <- tidy(reg_regiao)
 tidy_reg_regiao
@@ -274,7 +281,7 @@ write.csv(tidy_reg_regiao, "reg_regiao.csv")
 # Regressao com efeitos fixos de estado
 #===========================================================================================
 
-reg_UF <- (lm(excesso ~ wealth*corona + wealth + corona + ua + mais65 + UF + populacao + MES_CMPT, data = dados_dataSUS_excesso))
+reg_UF <- (lm(excesso ~ wealth*corona + wealth + corona + ua + mais65 + UF + populacao + mes, data = dados_dataSUS_excesso))
 reg_UF
 
 tidy_reg_UF <- tidy(reg_UF)
