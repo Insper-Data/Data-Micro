@@ -268,6 +268,34 @@ CONASS <- mortes %>%
 ## Graficos
 #===========================================================================================
 
+teste <- conass %>% 
+  mutate(excesso_conass = obitos_20 / ((obitos_18 + obitos_19) / 2)) %>% 
+  mutate(excesso_conass_2 = excesso_conass -1) %>% 
+  left_join(base_PIB, by = c('municipio' = 'nome_municipio', "UF")) %>%
+  left_join(covid_mensal, by = c('municipio' = 'municipio')) %>% 
+  select(municipio, mes.x, PIB, populacao, UF, regiao, obitos_18, obitos_19, obitos_20) %>% 
+  rename("mes" = "mes.x") %>% 
+  group_by(municipio, mes) %>% 
+  summarise(populacao = sum(populacao), PIB = sum(PIB)) %>% 
+  mutate(PIB_per_capita = PIB / populacao) %>% 
+  mutate(wealth = ifelse(PIB_per_capita >= 27.364441, 'RICO',
+                         ifelse(PIB_per_capita >= 14.771092, 'MEDIO', 'POBRE')))
+
+conass %>%
+  group_by(wealth, mes) %>% 
+  summarise(excesso = mean(excesso_conass),
+            sd = sd(excesso_conass)) %>%
+  ggplot() + 
+  geom_line(aes(mes, excesso, group = wealth, color = wealth), size = 2) +
+  theme_classic() +
+  ylab("Excesso de mortalidade relativo") + 
+  xlab("Mês") +
+  scale_colour_discrete(name = "Nível de PIB per capita", labels = c("Alto","Médio", "Baixo")) +
+  labs(color = "Nível de Renda",
+       title = "Evolução do excesso de mortalidade em 2020",
+       subtitle = "por microrregião",
+       caption = "Fonte: MicroDataSUS e IBGE")
+
 CONASS %>%
   group_by(wealth, mes) %>% 
   summarise(excesso = mean(excesso_conass),
@@ -282,6 +310,7 @@ CONASS %>%
        title = "Evolução do excesso de mortalidade em 2020",
        subtitle = "por microrregião",
        caption = "Fonte: MicroDataSUS e IBGE")
+
 
 #===========================================================================================
 ## Regressao CONASS
