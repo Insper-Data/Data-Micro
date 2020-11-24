@@ -10,7 +10,7 @@ rm(list = ls())
 #===========================================================================================
 
 setwd('C:\\Users\\arthu\\Desktop\\InsperData\\COVID\\DiffDiff\\Data-Micro')
-#setwd('C:/Users/Pedro Saboia/Desktop/Insper Data')
+setwd('C:/Users/Pedro Saboia/Desktop/Insper Data')
 
 #===========================================================================================
 # Pacotes utilizados
