@@ -112,8 +112,6 @@ base_PIB <- read_excel("PIB_2010_2017.xlsx") %>%
 ## Base de dados bruta -> ultima atualizacao: 31/ago/2020
 #===========================================================================================
 
-cnes <- read_excel("CNES_Final.xlsx") 
-
 covid_bruto <- read_excel("HIST_PAINEL_COVIDBR_31ago2020_1.xlsx",
                           col_types = c('text', 'text', 'text','numeric','numeric','numeric',
                                         'text', 'date','numeric','numeric','numeric','numeric',
@@ -126,30 +124,6 @@ cnes <- cnes %>%
   filter(is.na(cod)) %>% 
   select(-cod)
 
-CNES <- base_PIB %>% 
-  separate(codigo_municipio, into = c("codigo_municipio", "extra"), sep = -1) %>% 
-  left_join(cnes, by = c("codigo_municipio" = "mun_cod")) %>% 
-  select(-c(extra, mun_nome)) %>% 
-  rename(mes = Mes,
-         leitos_amb_ped = "Leito_Amb_Rep/Obs_Ped",
-         leitos_amb_indif = "Leito_Amb_Rep/Obs_Indif",
-         leitos_amb_fem = "Leito_Amb_Rep/Obs_Fem",
-         leitos_amb_masc = "Leito_Amb_Rep/Obs_Masc",
-         leitos_urg_ped = "Leito_Urg_Rep/Obs_Ped",
-         leitos_urg_indif = "Leito_Urg_Rep/Obs_Indif",
-         leitos_urg_fem = "Leito_Urg_Rep/Obs_Fem",
-         leitos_urg_masc = "Leito_Urg_Rep/Obs_Masc") %>% 
-  mutate(leitos_amb_total = leitos_amb_ped + leitos_amb_indif + leitos_amb_fem + leitos_amb_masc,
-         leitos_urg_total = leitos_urg_ped + leitos_urg_indif + leitos_urg_fem + leitos_urg_masc) %>% 
-  filter(!is.na(mes)) %>% 
-  group_by(codigo_microrregiao, nome_microrregiao, mes) %>% 
-  summarise(leito_int_total = sum(Leito_Int_Total),
-            leito_amb_total = sum(leitos_amb_total),
-            leito_urg_total = sum(leitos_urg_total),
-            equipamentos_existentes = sum(Equipamentos_Existentes),
-            equipamentos_uso = sum(Equipamentos_em_Uso),
-            leito_comp_SUS = sum(Leito_Complementar_SUS),
-            leito_comp_nao_SUS = sum(Leito_Complementar_Nao_SUS))
 
 #===========================================================================================
 ## Pegar apenas os dados referentes ao final de cada mes
@@ -176,6 +150,37 @@ covid_mensal <- covid_bruto %>%
   select(-c(ano, dia, zero)) %>% 
   mutate(pop_interior = ifelse(metropolitana == FALSE, populacao, 0),
          pop_urbana = ifelse(metropolitana == TRUE, populacao, 0))
+
+#===========================================================================================
+## Daddos sobre infraestrutura hospitalar 
+#==========================================================================================
+
+cnes <- read_excel("CNES_Final.xlsx")
+
+CNES <- base_PIB %>% 
+  separate(codigo_municipio, into = c("codigo_municipio", "extra"), sep = -1) %>% 
+  left_join(cnes, by = c("codigo_municipio" = "mun_cod")) %>% 
+  select(-c(extra, mun_nome)) %>% 
+  rename(mes = Mes,
+         leitos_amb_ped = "Leito_Amb_Rep/Obs_Ped",
+         leitos_amb_indif = "Leito_Amb_Rep/Obs_Indif",
+         leitos_amb_fem = "Leito_Amb_Rep/Obs_Fem",
+         leitos_amb_masc = "Leito_Amb_Rep/Obs_Masc",
+         leitos_urg_ped = "Leito_Urg_Rep/Obs_Ped",
+         leitos_urg_indif = "Leito_Urg_Rep/Obs_Indif",
+         leitos_urg_fem = "Leito_Urg_Rep/Obs_Fem",
+         leitos_urg_masc = "Leito_Urg_Rep/Obs_Masc") %>% 
+  mutate(leitos_amb_total = leitos_amb_ped + leitos_amb_indif + leitos_amb_fem + leitos_amb_masc,
+         leitos_urg_total = leitos_urg_ped + leitos_urg_indif + leitos_urg_fem + leitos_urg_masc) %>% 
+  filter(!is.na(mes)) %>% 
+  group_by(codigo_microrregiao, nome_microrregiao, mes) %>% 
+  summarise(leito_int_total = sum(Leito_Int_Total),
+            leito_amb_total = sum(leitos_amb_total),
+            leito_urg_total = sum(leitos_urg_total),
+            equipamentos_existentes = sum(Equipamentos_Existentes),
+            equipamentos_uso = sum(Equipamentos_em_Uso),
+            leito_comp_SUS = sum(Leito_Complementar_SUS),
+            leito_comp_nao_SUS = sum(Leito_Complementar_Nao_SUS))
 
 #===========================================================================================
 ## Populacao acima de 65 anos
@@ -244,6 +249,21 @@ mortes <- conass %>%
   select(-c(obitos_18:obitos_20)) %>% 
   filter(!is.na(nome_microrregiao))
 
+# Dados filtrados
+
+filtros <- conass %>%
+  left_join(base_PIB, by = c('municipio' = 'nome_municipio', 'UF' = 'UF')) %>%
+  filter(obitos_18 != 0 & obitos_19 != 0) %>% 
+  group_by(nome_microrregiao, mes, UF) %>% 
+  summarise(obitos_18 = sum(obitos_18),
+            obitos_19 = sum(obitos_19),
+            obitos_20 = sum(obitos_20)) %>% 
+  mutate(excesso_conass = obitos_20 / ((obitos_18 + obitos_19) / 2)) %>% 
+  mutate(excesso_conass_2 = excesso_conass -1) %>% 
+  select(-c(obitos_18:obitos_20)) %>% 
+  filter(!is.na(nome_microrregiao))
+
+
 #===========================================================================================
 ## Arrumando a base
 #===========================================================================================
@@ -278,6 +298,12 @@ CONASS <- mortes %>%
   mutate(corona = ifelse(mes > 3, 1, 0)) %>% 
   left_join(CNES, by = c("nome_microrregiao" = "nome_microrregiao", "mes" = "mes"))
 
+CONASS_filtro <- filtros %>% 
+  left_join(controles,  by = c('nome_microrregiao' = 'nome_microrregiao', "UF" = "UF")) %>% 
+  filter(!is.na(regiao),
+         excesso_conass != "Inf") %>% 
+  mutate(corona = ifelse(mes > 3, 1, 0)) %>% 
+  left_join(CNES, by = c("nome_microrregiao" = "nome_microrregiao", "mes" = "mes"))
 
 #===========================================================================================
 ## Graficos
@@ -326,12 +352,29 @@ CONASS %>%
        subtitle = "por microrregião",
        caption = "Fonte: MicroDataSUS e IBGE")
 
+CONASS_filtro %>%
+  group_by(wealth, mes) %>% 
+  summarise(excesso = mean(excesso_conass),
+            sd = sd(excesso_conass)) %>%
+  ggplot() + 
+  geom_line(aes(mes, excesso, group = wealth, color = wealth), size = 2) +
+  theme_classic() +
+  ylab("Excesso de mortalidade relativo") + 
+  xlab("Mês") +
+  scale_colour_discrete(name = "Nível de PIB per capita", labels = c("Alto","Médio", "Baixo")) +
+  labs(color = "Nível de Renda",
+       title = "Evolução do excesso de mortalidade em 2020",
+       subtitle = "por microrregião",
+       caption = "Fonte: MicroDataSUS e IBGE")
 
-#===========================================================================================
+
+ #===========================================================================================
 ## Regressao CONASS
 #===========================================================================================
 
 summary(lm(excesso_conass_2 ~ wealth*corona + wealth + corona + mais65 + populacao + p_urbana + p_rural + UF + mes , data = CONASS))
+
+summary(lm(excesso_conass_2 ~ wealth*corona + wealth + corona + mais65 + populacao + UF + mes , data = CONASS_filtro))
 
 summary(lm(excesso_conass_2 ~ wealth*corona + wealth + leito_int_total + leito_amb_total + leito_urg_total + equipamentos_uso + corona + mais65 + populacao + p_urbana + p_rural + regiao + mes, data = CONASS))
 
@@ -347,6 +390,29 @@ write.xlsx(CONASS, "CONASS.xlsx")
 
 conass_municipio <- conass %>%
   mutate(excesso_conass = obitos_20 / ((obitos_18 + obitos_19) / 2)) %>%
+  left_join(base_PIB, by = c('municipio' = 'nome_municipio', 'UF' = 'UF')) %>%
+  separate(codigo_municipio, into = c('codigo_municipio', 'extra'), sep = -1) %>%
+  mutate(codigo_municipio = as.double(codigo_municipio)) %>% 
+  select(-extra) %>% 
+  left_join(covid_mensal, by = c('codigo_municipio' = 'codmun')) %>% 
+  select(codigo_municipio, municipio.x, nome_microrregiao, UF, regiao, mes.x, 
+         PIB, populacao, casosAcumulado, metropolitana, excesso_conass, obitos_18, 
+         obitos_19, obitos_20) %>% 
+  rename(municipio = municipio.x,
+         mes = mes.x) %>% 
+  mutate(mortes_relativas = excesso_conass - 1,
+         PIB_per_capita = PIB / populacao,
+         casos_relativos = casosAcumulado / populacao) %>% 
+  filter(!is.na(PIB_per_capita),
+         mortes_relativas != Inf) %>% 
+  mutate(wealth = ifelse(PIB_per_capita >= 23.49736, 'RICO',
+                         ifelse(PIB_per_capita >= 11.80415, 'MEDIO', 'POBRE')),
+         corona = ifelse(mes > 3, TRUE, FALSE)) %>% 
+  left_join(mais65_mun, by = c('municipio' = 'municipio'))
+View()
+
+conass_municipio_1 <- conass %>%
+  mutate(excesso_conass = obitos_20 / ( 1 + (obitos_18 + obitos_19) / 2)) %>%
   left_join(base_PIB, by = c('municipio' = 'nome_municipio', 'UF' = 'UF')) %>%
   separate(codigo_municipio, into = c('codigo_municipio', 'extra'), sep = -1) %>%
   mutate(codigo_municipio = as.double(codigo_municipio)) %>% 
@@ -385,8 +451,22 @@ conass_municipio %>%
        subtitle = "por microrregião",
        caption = "Fonte: MicroDataSUS e IBGE")
 
+conass_municipio_1 %>%
+  group_by(wealth, mes) %>% 
+  summarise(excesso = mean(mortes_relativas) - 1,
+            sd = sd(mortes_relativas)) %>%
+  ggplot() + 
+  geom_line(aes(as.factor(mes), excesso, group = wealth, color = wealth), size = 2) +
+  theme_classic() +
+  ylab("Excesso de mortalidade relativo") + 
+  xlab("Mês") +
+  scale_colour_discrete(name = "Nível de PIB per capita") +
+  labs(color = "Nível de Renda",
+       title = "Evolução do excesso de mortalidade em 2020",
+       subtitle = "por microrregião",
+       caption = "Fonte: MicroDataSUS e IBGE")
 
 summary(lm(mortes_relativas ~ wealth*corona + mais65 + populacao + mes + UF, data = conass_municipio))
 
-
+summary(lm(mortes_relativas ~ wealth*corona + mais65 + populacao + mes + UF, data = conass_municipio_1))
 
