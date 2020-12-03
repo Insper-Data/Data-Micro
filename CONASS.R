@@ -116,14 +116,6 @@ covid_bruto <- read_excel("HIST_PAINEL_COVIDBR_31ago2020_1.xlsx",
                           col_types = c('text', 'text', 'text','numeric','numeric','numeric',
                                         'text', 'date','numeric','numeric','numeric','numeric',
                                         'numeric','numeric','numeric','numeric','logical'))
-cnes <- cnes %>%
-  mutate(across(names(cnes)[3:19], as.double)) %>%
-  mutate_all(funs(replace_na(., 0))) %>% 
-  separate(Municipio, into = c("mun_cod", "mun_nome"), sep = 6) %>% 
-  separate(mun_nome, into = c("mun_nome", "cod"), sep = "-") %>% 
-  filter(is.na(cod)) %>% 
-  select(-cod)
-
 
 #===========================================================================================
 ## Pegar apenas os dados referentes ao final de cada mes
@@ -156,6 +148,14 @@ covid_mensal <- covid_bruto %>%
 #==========================================================================================
 
 cnes <- read_excel("CNES_Final.xlsx")
+
+cnes <- cnes %>%
+  mutate(across(names(cnes)[3:19], as.double)) %>%
+  mutate_all(funs(replace_na(., 0))) %>% 
+  separate(Municipio, into = c("mun_cod", "mun_nome"), sep = 6) %>% 
+  separate(mun_nome, into = c("mun_nome", "cod"), sep = "-") %>% 
+  filter(is.na(cod)) %>% 
+  select(-cod)
 
 CNES <- base_PIB %>% 
   separate(codigo_municipio, into = c("codigo_municipio", "extra"), sep = -1) %>% 
@@ -211,6 +211,8 @@ mais65 <- age %>%
             TOTAL = sum(TOTAL)) %>% 
   mutate(mais65 = POPULACAO / TOTAL) %>% 
   select(-c(POPULACAO:TOTAL))
+
+# Base para a analise municipal
 
 mais65_mun <- age %>%
   separate(FXETARIA, into = c('min', 'max'), sep = -2) %>% 
@@ -298,6 +300,8 @@ CONASS <- mortes %>%
   mutate(corona = ifelse(mes > 3, 1, 0)) %>% 
   left_join(CNES, by = c("nome_microrregiao" = "nome_microrregiao", "mes" = "mes"))
 
+# Filtrando para municipios que nao tenham mortes em 2018 e 2019
+
 CONASS_filtro <- filtros %>% 
   left_join(controles,  by = c('nome_microrregiao' = 'nome_microrregiao', "UF" = "UF")) %>% 
   filter(!is.na(regiao),
@@ -367,8 +371,7 @@ CONASS_filtro %>%
        subtitle = "por microrregião",
        caption = "Fonte: MicroDataSUS e IBGE")
 
-
- #===========================================================================================
+#===========================================================================================
 ## Regressao CONASS
 #===========================================================================================
 
@@ -411,6 +414,8 @@ conass_municipio <- conass %>%
   left_join(mais65_mun, by = c('municipio' = 'municipio'))
 View()
 
+# Base com a medida de excedente adaptado
+
 conass_municipio_1 <- conass %>%
   mutate(excesso_conass = obitos_20 / ( 1 + (obitos_18 + obitos_19) / 2)) %>%
   left_join(base_PIB, by = c('municipio' = 'nome_municipio', 'UF' = 'UF')) %>%
@@ -435,6 +440,12 @@ conass_municipio_1 <- conass %>%
 View()
 
 quantile(conass_municipio$PIB_per_capita, probs =  c(0, 1/3, 2/3, 1))
+
+
+#
+# Graficos dos municipios
+#
+
 
 conass_municipio %>%
   group_by(wealth, mes) %>% 
@@ -465,6 +476,9 @@ conass_municipio_1 %>%
        title = "Evolução do excesso de mortalidade em 2020",
        subtitle = "por microrregião",
        caption = "Fonte: MicroDataSUS e IBGE")
+
+
+# Regressões com os municipios 
 
 summary(lm(mortes_relativas ~ wealth*corona + mais65 + populacao + mes + UF, data = conass_municipio))
 
