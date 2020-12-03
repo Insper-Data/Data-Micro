@@ -10,7 +10,7 @@ rm(list = ls())
 #===========================================================================================
 
 setwd('C:\\Users\\arthu\\Desktop\\InsperData\\COVID\\DiffDiff\\Data-Micro')
-setwd('C:/Users/Pedro Saboia/Desktop/Insper Data')
+#setwd('C:/Users/Pedro Saboia/Desktop/Insper Data')
 
 #===========================================================================================
 # Pacotes utilizados
@@ -206,6 +206,21 @@ mais65 <- age %>%
             TOTAL = sum(TOTAL)) %>% 
   mutate(mais65 = POPULACAO / TOTAL) %>% 
   select(-c(POPULACAO:TOTAL))
+
+mais65_mun <- age %>%
+  separate(FXETARIA, into = c('min', 'max'), sep = -2) %>% 
+  filter(min >= 65,
+         min != 7,
+         min != 8,
+         min != 9) %>% 
+  unite(faixa, min, max, sep = "-") %>% 
+  group_by(MUNIC_RES) %>% 
+  summarise(POPULACAO = sum(POPULACAO)) %>% 
+  left_join(poptotal, by = c('MUNIC_RES' = 'MUNIC_RES'))%>% 
+  left_join(covid_mensal, by = c('MUNIC_RES' = 'codmun')) %>% 
+  select(c(POPULACAO:municipio)) %>% 
+  mutate(mais65 = POPULACAO / TOTAL) %>% 
+  unique()
 
 #===========================================================================================
 ## Dados sobre mortalidade excessiva
