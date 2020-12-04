@@ -36,34 +36,34 @@ conas_18 <- read_excel("CONASS_2018.xlsx") %>%
   rename(obitos_18 = "obitos")
 
 conas_19 <- read_excel("CONASS_2019.xlsx") %>% 
-  rename(mes = "MÍs",
-         municipio = "MunicÌpio",
-         obitos = "”bitos",
+  rename(mes = "M√™s",
+         municipio = "Munic√≠pio",
+         obitos = "√≥bitos",
          estado = "UF") %>%
   mutate(UF = ifelse(estado == "Acre", "AC",
               ifelse(estado == "Alagoas", "AL",
-              ifelse(estado == "Amap·", "AP", 
+              ifelse(estado == "Amap√°", "AP", 
               ifelse(estado == "Amazonas", "AM",
               ifelse(estado == "Bahia", "BA",
               ifelse(estado == "Ceara", "CE",
-              ifelse(estado == "EspÌrito Santo", "ES",
-              ifelse(estado == "Goi·s", "GO",
-              ifelse(estado == "Maranh„o", "MA",
+              ifelse(estado == "Esp√≠rito Santo", "ES",
+              ifelse(estado == "Goi√°s", "GO",
+              ifelse(estado == "Maranh√£o", "MA",
               ifelse(estado == "Mato Grosso", "MT",
               ifelse(estado == "Mato Grosso do Sul", "MS",
               ifelse(estado == "Minas Gerais", "MG", 
-              ifelse(estado == "Par·", "PA",
-              ifelse(estado == "ParaÌba", "PB", 
-              ifelse(estado == "Paran·", "PR",
+              ifelse(estado == "Par√°", "PA",
+              ifelse(estado == "Para√≠ba", "PB", 
+              ifelse(estado == "Paran√°", "PR",
               ifelse(estado == "Pernambuco", "PE",
-              ifelse(estado == "PiauÌ", "PI", 
+              ifelse(estado == "Piau√≠", "PI", 
               ifelse(estado == "Rio de Janeiro", "RJ",
               ifelse(estado == "Rio Grande do Norte", "RN",
               ifelse(estado == "Rio Grande do Sul", "RS",
-              ifelse(estado == "RondÙnia", "RO",
+              ifelse(estado == "Rond√¥nia", "RO",
               ifelse(estado == "Roraima", "RR",
               ifelse(estado == "Santa Catarina", "SC",
-              ifelse(estado == "S„o Paulo", "SP",
+              ifelse(estado == "S√£o Paulo", "SP",
               ifelse(estado == "Sergipe", "SE",
               ifelse(estado == "Tocantins", "TO", 
               ifelse(estado == "Distrito Federal", "DF", NA)
@@ -86,19 +86,19 @@ conas_20 <- read_excel("CONASS_2020.xlsx") %>%
 
 base_PIB <- read_excel("PIB_2010_2017.xlsx") %>% 
   filter(Ano == 2017) %>%
-  rename(codigo_regiao = "CÛdigo da Grande Regi„o", 
-         regiao = "Nome da Grande Regi„o",
-         codigo_UF = "CÛdigo da Unidade da FederaÁ„o",
-         UF = "Sigla da Unidade da FederaÁ„o",
-         nome_UF = "Nome da Unidade da FederaÁ„o",
-         codigo_municipio = "CÛdigo do MunicÌpio",
-         nome_municipio = "Nome do MunicÌpio",
-         regiao_metropolitana = "Regi„o Metropolitana",
-         codigo_mesorregiao = "CÛdigo da Mesorregi„o",
-         nome_mesorregiao = "Nome da Mesorregi„o",
-         codigo_microrregiao = "CÛdigo da Microrregi„o",
-         nome_microrregiao =  "Nome da Microrregi„o",
-         PIB = "Produto Interno Bruto, \r\na preÁos correntes\r\n(R$ 1.000)") %>%
+  rename(codigo_regiao = "C√≥digo da Grande Regi√£o", 
+         regiao = "Nome da Grande Regi√£o",
+         codigo_UF = "C√≥digo da Unidade da Federa√ß√£o",
+         UF = "Sigla da Unidade da Federa√ß√£o",
+         nome_UF = "Nome da Unidade da Federa√ß√£o",
+         codigo_municipio = "C√≥digo do Munic√≠pio",
+         nome_municipio = "Nome do Munic√≠pio",
+         regiao_metropolitana = "Regi√£o Metropolitana",
+         codigo_mesorregiao = "C√≥digo da Mesorregi√£o",
+         nome_mesorregiao = "Nome da Mesorregi√£o",
+         codigo_microrregiao = "C√≥digo da Microrregi√£o",
+         nome_microrregiao =  "Nome da Microrregi√£o",
+         PIB = "Produto Interno Bruto, \r\na pre√ßos correntes\r\n(R$ 1.000)") %>%
   select(regiao, UF, nome_UF, 
          nome_municipio, 
          nome_mesorregiao,
@@ -144,7 +144,7 @@ covid_mensal <- covid_bruto %>%
          pop_urbana = ifelse(metropolitana == TRUE, populacao, 0))
 
 #===========================================================================================
-## Daddos sobre infraestrutura hospitalar 
+## Daddos sobre infraestrutura hospitalar por microrregiao e por munic√≠pio
 #==========================================================================================
 
 cnes <- read_excel("CNES_Final.xlsx")
@@ -157,7 +157,7 @@ cnes <- cnes %>%
   filter(is.na(cod)) %>% 
   select(-cod)
 
-CNES <- base_PIB %>% 
+CNES_micro <- base_PIB %>% 
   separate(codigo_municipio, into = c("codigo_municipio", "extra"), sep = -1) %>% 
   left_join(cnes, by = c("codigo_municipio" = "mun_cod")) %>% 
   select(-c(extra, mun_nome)) %>% 
@@ -181,6 +181,24 @@ CNES <- base_PIB %>%
             equipamentos_uso = sum(Equipamentos_em_Uso),
             leito_comp_SUS = sum(Leito_Complementar_SUS),
             leito_comp_nao_SUS = sum(Leito_Complementar_Nao_SUS))
+
+CNES_mun <- base_PIB %>% 
+  separate(codigo_municipio, into = c("codigo_municipio", "extra"), sep = -1) %>% 
+  left_join(cnes, by = c("codigo_municipio" = "mun_cod")) %>% 
+  select(-c(extra, mun_nome)) %>% 
+  rename(mes = Mes,
+         leitos_amb_ped = "Leito_Amb_Rep/Obs_Ped",
+         leitos_amb_indif = "Leito_Amb_Rep/Obs_Indif",
+         leitos_amb_fem = "Leito_Amb_Rep/Obs_Fem",
+         leitos_amb_masc = "Leito_Amb_Rep/Obs_Masc",
+         leitos_urg_ped = "Leito_Urg_Rep/Obs_Ped",
+         leitos_urg_indif = "Leito_Urg_Rep/Obs_Indif",
+         leitos_urg_fem = "Leito_Urg_Rep/Obs_Fem",
+         leitos_urg_masc = "Leito_Urg_Rep/Obs_Masc") %>% 
+  mutate(leitos_amb_total = leitos_amb_ped + leitos_amb_indif + leitos_amb_fem + leitos_amb_masc,
+         leitos_urg_total = leitos_urg_ped + leitos_urg_indif + leitos_urg_fem + leitos_urg_masc) %>% 
+  filter(!is.na(mes)) %>% 
+  mutate(leitos_total = leitos_amb_total + leitos_urg_total + Leito_Int_Total + Leito_Complementar_existente)
 
 #===========================================================================================
 ## Populacao acima de 65 anos
@@ -334,11 +352,11 @@ conass %>%
   geom_line(aes(mes, excesso, group = wealth, color = wealth), size = 2) +
   theme_classic() +
   ylab("Excesso de mortalidade relativo") + 
-  xlab("MÍs") +
-  scale_colour_discrete(name = "NÌvel de PIB per capita", labels = c("Alto","MÈdio", "Baixo")) +
-  labs(color = "NÌvel de Renda",
-       title = "EvoluÁ„o do excesso de mortalidade em 2020",
-       subtitle = "por microrregi„o",
+  xlab("M?s") +
+  scale_colour_discrete(name = "N?vel de PIB per capita", labels = c("Alto","M?dio", "Baixo")) +
+  labs(color = "N?vel de Renda",
+       title = "Evolu??o do excesso de mortalidade em 2020",
+       subtitle = "por microrregi?o",
        caption = "Fonte: MicroDataSUS e IBGE")
 
 CONASS %>%
@@ -349,11 +367,11 @@ CONASS %>%
   geom_line(aes(mes, excesso, group = wealth, color = wealth), size = 2) +
   theme_classic() +
   ylab("Excesso de mortalidade relativo") + 
-  xlab("MÍs") +
-  scale_colour_discrete(name = "NÌvel de PIB per capita", labels = c("Alto","MÈdio", "Baixo")) +
-  labs(color = "NÌvel de Renda",
-       title = "EvoluÁ„o do excesso de mortalidade em 2020",
-       subtitle = "por microrregi„o",
+  xlab("M?s") +
+  scale_colour_discrete(name = "N?vel de PIB per capita", labels = c("Alto","M?dio", "Baixo")) +
+  labs(color = "N?vel de Renda",
+       title = "Evolu??o do excesso de mortalidade em 2020",
+       subtitle = "por microrregi?o",
        caption = "Fonte: MicroDataSUS e IBGE")
 
 CONASS_filtro %>%
@@ -364,11 +382,11 @@ CONASS_filtro %>%
   geom_line(aes(mes, excesso, group = wealth, color = wealth), size = 2) +
   theme_classic() +
   ylab("Excesso de mortalidade relativo") + 
-  xlab("MÍs") +
-  scale_colour_discrete(name = "NÌvel de PIB per capita", labels = c("Alto","MÈdio", "Baixo")) +
-  labs(color = "NÌvel de Renda",
-       title = "EvoluÁ„o do excesso de mortalidade em 2020",
-       subtitle = "por microrregi„o",
+  xlab("M?s") +
+  scale_colour_discrete(name = "N?vel de PIB per capita", labels = c("Alto","M?dio", "Baixo")) +
+  labs(color = "N?vel de Renda",
+       title = "Evolu??o do excesso de mortalidade em 2020",
+       subtitle = "por microrregi?o",
        caption = "Fonte: MicroDataSUS e IBGE")
 
 #===========================================================================================
@@ -455,11 +473,11 @@ conass_municipio %>%
   geom_line(aes(as.factor(mes), excesso, group = wealth, color = wealth), size = 2) +
   theme_classic() +
   ylab("Excesso de mortalidade relativo") + 
-  xlab("MÍs") +
-  scale_colour_discrete(name = "NÌvel de PIB per capita") +
-  labs(color = "NÌvel de Renda",
-       title = "EvoluÁ„o do excesso de mortalidade em 2020",
-       subtitle = "por microrregi„o",
+  xlab("M?s") +
+  scale_colour_discrete(name = "N?vel de PIB per capita") +
+  labs(color = "N?vel de Renda",
+       title = "Evolu??o do excesso de mortalidade em 2020",
+       subtitle = "por microrregi?o",
        caption = "Fonte: MicroDataSUS e IBGE")
 
 conass_municipio_1 %>%
@@ -470,15 +488,15 @@ conass_municipio_1 %>%
   geom_line(aes(as.factor(mes), excesso, group = wealth, color = wealth), size = 2) +
   theme_classic() +
   ylab("Excesso de mortalidade relativo") + 
-  xlab("MÍs") +
-  scale_colour_discrete(name = "NÌvel de PIB per capita") +
-  labs(color = "NÌvel de Renda",
-       title = "EvoluÁ„o do excesso de mortalidade em 2020",
-       subtitle = "por microrregi„o",
+  xlab("M?s") +
+  scale_colour_discrete(name = "N?vel de PIB per capita") +
+  labs(color = "N?vel de Renda",
+       title = "Evolu??o do excesso de mortalidade em 2020",
+       subtitle = "por microrregi?o",
        caption = "Fonte: MicroDataSUS e IBGE")
 
 
-# Regressıes com os municipios 
+# Regress?es com os municipios 
 
 summary(lm(mortes_relativas ~ wealth*corona + mais65 + populacao + mes + UF, data = conass_municipio))
 
