@@ -115,8 +115,7 @@ base_PIB <- read_excel("PIB_2010_2017.xlsx") %>%
 
 covid_bruto <- read_excel("HIST_PAINEL_COVIDBR_31ago2020_1.xlsx",
                           col_types = c('text', 'text', 'text','numeric','numeric','numeric',
-
-                                                                                'text', 'date','numeric','numeric','numeric','numeric',
+                                        'text', 'date','numeric','numeric','numeric','numeric',
                                         'numeric','numeric','numeric','numeric','logical'))
 
 #===========================================================================================
