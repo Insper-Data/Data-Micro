@@ -214,14 +214,8 @@ Datasus_municipio <- Obitos_dataSus %>%
   mutate(PIB_per_capita = PIB / populacao) %>% 
   filter(!is.na(PIB_per_capita),
          excesso_datasus != Inf) %>%
-  filter(!is.na(PIB_per_capita))
-
-quantile(Datasus_municipio_1$PIB_per_capita, probs = c(.333333,.666666))
-
-Datasus_municipio <- Datasus_municipio %>% 
-  mutate(wealth = ifelse(PIB_per_capita >= quantile(Datasus_municipio$PIB_per_capita , p = c(2/3)), 'RICO',
-                  ifelse(PIB_per_capita >= quantile(Datasus_municipio$PIB_per_capita, p = c(1/3)), 'MEDIO', 'POBRE')),
-         mes = as.double(mes)) %>% 
+  filter(!is.na(PIB_per_capita)) %>% 
+  mutate(mes = as.double(mes)) %>% 
   left_join(mais65_mun, by = c('mun_cod' = 'MUNIC_RES')) %>%
   left_join(corona, by = c('mun_cod' = 'codmun', 
                            'UF' = 'estado',
@@ -230,8 +224,7 @@ Datasus_municipio <- Datasus_municipio %>%
          corona = replace_na(corona, 0)) %>%
   select(mes, mun_cod, nome_municipio, nome_microrregiao, 
          UF, excesso_datasus, populacao, metropolitana, 
-         PIB_per_capita, mais65, wealth, corona, regiao)
-
+         PIB_per_capita, mais65, corona, regiao)
 ```
 
 Juntando com os dados do CNES sobre infraestrutura hospitalar, preparando uma base mais completa para a análise  
@@ -242,7 +235,12 @@ DataSus_x_cnes <- Datasus_municipio %>%
   mutate(Leito_Int_Relat = Leito_Int_Total / populacao,
          Leito_Total = Leito_Int_Total + Leito_Complementar_Total + Leito_Amb_Total + Leito_Urg_Total,
          Leito_Relat = Leito_Total / populacao  * 1000) %>% 
-  select(mes:regiao, Equipamentos_Existentes, Equipamentos_em_Uso, Leito_Relat)
+  select(mes:regiao, Equipamentos_Existentes, Equipamentos_em_Uso, Leito_Relat) %>% 
+  filter(!is.na(mais65),
+         !is.na(Leito_Relat)) %>% 
+  mutate(wealth = ifelse(PIB_per_capita >= quantile(Datasus_municipio$PIB_per_capita , p = c(2/3)), 'RICO',
+                  ifelse(PIB_per_capita >= quantile(Datasus_municipio$PIB_per_capita, p = c(1/3)), 'MEDIO', 'POBRE')))
+
 ```
 
 Para as regressões que serão realizadas, utilizamos do Stata para tal. Para isso, salvamos a base como um Stata Database. 
@@ -254,25 +252,7 @@ write.dta(DataSus_x_cnes, "DATASUS_MUN_CNES.dta")
 
 ## Gráficos sobre mortalidade 
 ```{r}
-Datasus_municipio %>%
-  group_by(wealth, mes) %>% 
-  summarise(excesso = mean(excesso_datasus),
-            sd = sd(excesso_datasus)) %>%
-  mutate(wealth = ifelse(wealth == 'RICO', 'aa.Rico',
-                  ifelse(wealth == 'POBRE', 'cc.Pobre',
-                  ifelse(wealth == 'MEDIO', 'bb.Médio', NA)))) %>%
-  ggplot() + 
-  geom_line(aes(as.factor(mes), excesso, group = wealth, color = wealth), size = 2) +
-  theme_classic() +
-  ylab("Excesso de mortalidade relativo") + 
-  xlab("Mês") +
-  scale_colour_discrete(name = "Nível de PIB per capita") +
-  labs(color = "Nível de Renda",
-       title = "Evolução do excesso de mortalidade em 2020",
-       subtitle = "por municipio",
-       caption = "Fonte: MicroDataSUS e IBGE")
-
-Datasus_municipio %>%
+DataSus_x_cnes %>%
   group_by(wealth, mes) %>% 
   summarise(excesso = mean(excesso_datasus),
             sd = sd(excesso_datasus)) %>%
@@ -291,34 +271,16 @@ Datasus_municipio %>%
     theme(legend.key.size = unit(1, 'cm'),
         legend.title = element_text(size = 11),
         legend.text = element_text(size = 11),
-        legend.position = 'right')
-
+        legend.position = 'right') +
+  labs(color = "Nível de Renda",
+       title = "Evolução do excesso de mortalidade em 2020",
+       subtitle = "por municipio",
+       caption = "Fonte: MicroDataSUS e IBGE")
 ```
 
 ## Gráfico da trajetória da doença
 ```{r}
-Datasus_municipio %>% 
-  group_by(wealth, corona) %>% 
-  summarise(death = mean(excesso_datasus)) %>%
-  mutate(corona = as.factor(corona)) %>%
-  mutate(wealth = ifelse(wealth == 'RICO', 'aa.Rico',
-                         ifelse(wealth == 'POBRE', 'cc.Pobre',
-                         ifelse(wealth == 'MEDIO', 'bb.Médio', NA)))) %>%
-  ggplot(aes(x = corona, y = death, group = wealth, colour = wealth)) +
-  geom_line() +
-  geom_point(size = 3) +
-  ylab('Mortes excessivas') +
-  xlab('Pré x Pós o 1º caso') +
-  labs(title = 'Impacto da pandemia do coronavírus no excesso de mortes',
-       subtitle = 'em nível municipal', 
-       colour = 'Riqueza',
-       caption = 'Fonte: DataSUS e Ministério da Saúde') +
-  scale_colour_discrete(name = "Riqueza", label = c('Rico',
-                                                    'Médio',
-                                                    'Pobre')) +
-  theme_classic()
-
-Datasus_municipio %>% 
+DataSus_x_cnes %>% 
   group_by(wealth, corona) %>% 
   summarise(death = mean(excesso_datasus)) %>%
   mutate(corona = as.factor(corona)) %>%
@@ -334,6 +296,10 @@ Datasus_municipio %>%
   scale_colour_manual(name = "Riqueza",
                         label = c('Rico','Médio','Pobre'),
                         values = c('#0059A1','#39A100', 'gold')) +
+  labs(title = 'Impacto da pandemia do coronavírus no excesso de mortes',
+       subtitle = 'em nível municipal', 
+       colour = 'Riqueza',
+       caption = 'Fonte: DataSUS e Ministério da Saúde') +
   theme_classic()
 ```
 
@@ -347,7 +313,6 @@ DataSus_x_cnes %>%
   mutate(wealth = ifelse(wealth == 'RICO', 'Rico',
                          ifelse(wealth == 'POBRE', ' Pobre',
                          ifelse(wealth == 'MEDIO', 'Médio', NA)))) %>%
-  mutate(wealth = reorder(wealth, PIB, max)) %>% 
   ggplot(aes(x = death, y = wealth)) +
     geom_line(size = 1.5, color = 'gray') +
     geom_point(size = 3.5, aes(colour = corona)) +
@@ -358,8 +323,11 @@ DataSus_x_cnes %>%
                         label = c('Pré 1º caso', 'Pós 1º caso')) +
     theme_classic() +
     theme(legend.position = 'right',
-        axis.text.y = element_text(size = 12))
+          axis.text.y = element_text(size = 12)) +
+    labs(title = 'Impacto da pandemia do coronavírus no excesso de mortes',
+       subtitle = 'em nível municipal', 
+       colour = 'Riqueza',
+       caption = 'Fonte: DataSUS e Ministério da Saúde')
 
 ```
-
 
