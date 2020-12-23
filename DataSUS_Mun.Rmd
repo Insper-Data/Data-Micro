@@ -1,0 +1,365 @@
+---
+title: "Análise de Impacto da COVID-19 - DataSUS"
+author: "Pedro campos, Arthur Alberti, Gustavo Luchesi - Orientador: Daniel Duque"
+date: "22/12/2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd('C:/Users/Pedro Saboia/Desktop/Insper Data/CD')
+```
+
+Com essa análise, buscamos observar, por meio das mortalidade registrada no sistema de saúde, qual foi o impacto da pandemia nos municípios brasileiros, sob a ótica de identificar diferenças entre municípios com base no nível de renda das localidades.
+
+Selecionamos os pacotes utilizados na análise:
+```{r}
+library(dplyr)
+library(tidyverse)
+library(microdatasus)
+library(skimr)
+library(readxl)
+library(lubridate)
+library(broom)
+library(openxlsx)
+library(foreign)
+library(geobr)
+library(sf)
+library(rio)
+library(ggthemes)
+library(ggalt)
+library(gganimate)
+```
+
+# Dados utilizados 
+
+## Dados do DataSUS 
+```{r}
+Obitos_dataSus <- read_excel("C:/Users/Pedro Saboia/Desktop/Insper Data/CD/Base_Obitos_DataSus.xlsx")
+
+Obitos_dataSus <- Obitos_dataSus %>%
+  mutate(across(names(Obitos_dataSus)[2:4], as.double)) %>%
+  mutate_all(funs(replace_na(., 0))) %>% 
+  separate(Municipio, into = c("mun_cod", "mun_nome"), sep = 6) %>% 
+  separate(mun_nome, into = c("cod", "mun_nome"), sep = 0) %>%
+  select(-c(cod)) %>% 
+  filter(mun_cod != 130000 & mun_cod != 140000 & mun_cod != 110000 & mun_cod != 120000 &
+           mun_cod != 150000 & mun_cod != 160000 & mun_cod != 170000 & mun_cod != 210000 &
+           mun_cod != 220000 & mun_cod != 230000 & mun_cod != 240000 & mun_cod != 250000 &
+           mun_cod != 260000 & mun_cod != 270000 & mun_cod != 280000 & mun_cod != 290000 &
+           mun_cod != 310000 & mun_cod != 320000 & mun_cod != 330000 & mun_cod != 350000 &
+           mun_cod != 410000 & mun_cod != 420000 & mun_cod != 430000 &
+           mun_cod != 510000 & mun_cod != 520000 & mun_cod != 530000) %>% 
+  mutate(mun_cod = as.double(mun_cod))
+```
+
+## Dados de casos de COVID-19
+
+Com os dados sobre a porgressão da pandemia temos dois objetivos:
+  
+  (i) Estabelecer o momento em que a pandemia "começou" dentro do determinado município.
+  (ii) Ter uma visão mais clara sobre a evolução da doença dentro do país.
+
+Buscando os dados brutos de casos, em frequência diária, para todos os municípios brasileiros
+```{r}
+covid_bruto <- read_excel("C:/Users/Pedro Saboia/Desktop/Insper Data/CD/HIST_PAINEL_COVIDBR_31ago2020_1.xlsx",
+                          col_types = c('text', 'text', 'text','numeric','numeric','numeric',
+                                        'text', 'date','numeric','numeric','numeric','numeric',
+                                        'numeric','numeric','numeric','numeric','logical'))
+```
+
+Tratando os dados para a frequência municipal, com base no número de casos no último dia de cada mês
+```{r}
+covid_mensal <- covid_bruto %>%
+  filter(codmun != 0, 
+         codRegiaoSaude != 0,
+         data == as.Date("2020-01-31")|
+         data == as.Date("2020-02-29")|
+         data == as.Date("2020-03-31")|
+         data == as.Date("2020-04-30")|
+         data == as.Date("2020-05-31")|
+         data == as.Date("2020-06-30")|
+         data == as.Date("2020-07-31")|
+         data == as.Date("2020-08-31")|
+         data == as.Date("2020-09-30")) %>% 
+  select(codmun, municipio, data, populacaoTCU2019,
+         casosAcumulado, `interior/metropolitana`, estado) %>% 
+  rename(populacao = populacaoTCU2019,
+         metropolitana = `interior/metropolitana`) %>% 
+  separate(data, into = c('ano', 'mes', 'dia'), sep = "-") %>% 
+  separate(mes, into = c('zero', 'mes'), sep = 1) %>%
+  select(-c(ano, dia, zero)) %>% 
+  mutate(pop_interior = ifelse(metropolitana == FALSE, populacao, 0),
+         pop_urbana = ifelse(metropolitana == TRUE, populacao, 0))
+
+```
+
+Criando um indicador de onde a doença começou com base se, naquele mês, mais da metade dos dias já haviam casos registrados na localidade. 
+```{r}
+corona <- covid_bruto %>% 
+  mutate(Corona = ifelse(casosAcumulado > 0, 1, 0)) %>% 
+  separate(data, into = c('ano', 'mes', 'dia'), sep = "-") %>% 
+  separate(mes, into = c('zero', 'mes'), sep = 1) %>% 
+  filter(municipio != 0) %>% 
+  group_by(mes, estado, codmun) %>% 
+  summarise(mean = mean(Corona)) %>% 
+  mutate(mes = as.double(mes))
+```
+
+## Dados sobre PIB municipal
+
+```{r}
+base_PIB <- read_excel("C:/Users/Pedro Saboia/Desktop/Insper Data/CD/PIB_2010_2018.xlsx") %>% 
+  filter(Ano == 2018) %>%
+  rename(codigo_regiao = "Código da Grande Região", 
+         regiao = "Nome da Grande Região",
+         codigo_UF = "Código da Unidade da Federação",
+         UF = "Sigla da Unidade da Federação",
+         nome_UF = "Nome da Unidade da Federação",
+         codigo_municipio = "Código do Município",
+         nome_municipio = "Nome do Município",
+         regiao_metropolitana = "Região Metropolitana",
+         codigo_mesorregiao = "Código da Mesorregião",
+         nome_mesorregiao = "Nome da Mesorregião",
+         codigo_microrregiao = "Código da Microrregião",
+         nome_microrregiao =  "Nome da Microrregião",
+         PIB = "Produto Interno Bruto, \r\na preços correntes\r\n(R$ 1.000)") %>%
+  select(regiao, UF, nome_UF, 
+         nome_municipio, 
+         nome_mesorregiao,
+         nome_microrregiao, 
+         PIB, codigo_municipio,
+         codigo_microrregiao) %>% 
+  separate(codigo_municipio, into = c('codigo_municipio', 'extra'), sep = -1) %>% 
+  select(-extra) %>% 
+  mutate(codigo_municipio = as.double(codigo_municipio))
+```
+
+## Dados demográficos 
+
+Base com informações demográficas brutas, com a atualização mais recente que encontramos, sendo um controle interessante, tanto sobre o comportamento da população, mas também sobre a vulnerábilidade à doença. Uma vez que a população idosa é considerada um grupo de risco, e este é um dado mais facilmente encontrado do que sobre os outros grupos que tem essa classificação, e de forma mais relevante.
+```{r}
+age <- read_csv("C:/Users/Pedro Saboia/Desktop/Insper Data/CD/POPBR12.csv")
+
+poptotal <- age %>% 
+  group_by(MUNIC_RES) %>% 
+  summarise(TOTAL = sum(POPULACAO))
+
+mais65_mun <- age %>%
+  separate(FXETARIA, into = c('min', 'max'), sep = -2) %>% 
+  filter(min >= 65,
+         min != 7,
+         min != 8,
+         min != 9) %>% 
+  unite(faixa, min, max, sep = "-") %>% 
+  group_by(MUNIC_RES) %>% 
+  summarise(POPULACAO = sum(POPULACAO)) %>% 
+  left_join(poptotal, by = c('MUNIC_RES' = 'MUNIC_RES'))%>% 
+  left_join(covid_mensal, by = c('MUNIC_RES' = 'codmun')) %>% 
+  select(MUNIC_RES, c(POPULACAO:TOTAL)) %>% 
+  mutate(mais65 = POPULACAO / TOTAL) %>% 
+  unique()
+```
+
+Os dados de população mais atualizada 
+```{r}
+populacao <- covid_mensal %>% 
+  filter(mes == 4) %>% 
+  select(codmun, populacao, metropolitana)
+```
+
+
+## CNES
+
+Dados de infraestrutura hospitalar, como um controle para as possíveis diferenças entre municípios, no que tange a capacidade de lidar com a doença.
+```{r}
+cnes <- read_excel("C:/Users/Pedro Saboia/Desktop/Insper Data/CD/CNES_Final.xlsx")
+
+cnes <- cnes %>%
+  mutate(across(names(cnes)[3:19], as.double)) %>%
+  mutate_all(funs(replace_na(., 0))) %>% 
+  separate(Municipio, into = c("mun_cod", "mun_nome"), sep = 6) %>% 
+  separate(mun_nome, into = c("mun_nome", "cod"), sep = "-") %>% 
+  filter(is.na(cod)) %>% 
+  select(-cod) %>% 
+  rename(mes = Mes,
+         leitos_amb_ped = "Leito_Amb_Rep/Obs_Ped",
+         leitos_amb_indif = "Leito_Amb_Rep/Obs_Indif",
+         leitos_amb_fem = "Leito_Amb_Rep/Obs_Fem",
+         leitos_amb_masc = "Leito_Amb_Rep/Obs_Masc",
+         leitos_urg_ped = "Leito_Urg_Rep/Obs_Ped",
+         leitos_urg_indif = "Leito_Urg_Rep/Obs_Indif",
+         leitos_urg_fem = "Leito_Urg_Rep/Obs_Fem",
+         leitos_urg_masc = "Leito_Urg_Rep/Obs_Masc",
+         Leito_Complementar_Total = 'Leito_Complementar_existente',
+         Estab_c_Equip_SUS = 'Estab_c/_Equip_SUS') %>% 
+  mutate(Leito_Amb_Total = leitos_amb_ped + leitos_amb_indif + leitos_amb_fem + leitos_amb_masc,
+         Leito_Urg_Total = leitos_urg_ped + leitos_urg_indif + leitos_urg_fem + leitos_urg_masc,
+         mun_cod = as.double(mun_cod)) %>% 
+  select(-c(Leito_Int_SUS:leitos_amb_indif,Leito_Complementar_SUS:leitos_urg_indif))
+```
+
+# Base de dados final 
+
+Agregamos todas as bases que contem os dados de interesse
+```{r}
+Datasus_municipio <- Obitos_dataSus %>%
+  mutate(excesso_datasus = (1 + Obitos_20) / ( 1 + (Obitos_18 + Obitos_19) / 2),
+         mes = as.character(Mes),
+         mun_cod = as.double(mun_cod)) %>%
+  left_join(base_PIB, c("mun_cod" = "codigo_municipio")) %>%
+  left_join(populacao, c("mun_cod" = "codmun")) %>%
+  mutate(PIB_per_capita = PIB / populacao) %>% 
+  filter(!is.na(PIB_per_capita),
+         excesso_datasus != Inf) %>%
+  filter(!is.na(PIB_per_capita))
+
+quantile(Datasus_municipio_1$PIB_per_capita, probs = c(.333333,.666666))
+
+Datasus_municipio <- Datasus_municipio %>% 
+  mutate(wealth = ifelse(PIB_per_capita >= quantile(Datasus_municipio$PIB_per_capita , p = c(2/3)), 'RICO',
+                  ifelse(PIB_per_capita >= quantile(Datasus_municipio$PIB_per_capita, p = c(1/3)), 'MEDIO', 'POBRE')),
+         mes = as.double(mes)) %>% 
+  left_join(mais65_mun, by = c('mun_cod' = 'MUNIC_RES')) %>%
+  left_join(corona, by = c('mun_cod' = 'codmun', 
+                           'UF' = 'estado',
+                           'mes' = 'mes')) %>%
+  mutate(corona = ifelse(mean > 0.5, 1, 0),
+         corona = replace_na(corona, 0)) %>%
+  select(mes, mun_cod, nome_municipio, nome_microrregiao, 
+         UF, excesso_datasus, populacao, metropolitana, 
+         PIB_per_capita, mais65, wealth, corona, regiao)
+
+```
+
+Juntando com os dados do CNES sobre infraestrutura hospitalar, preparando uma base mais completa para a análise  
+```{r}
+DataSus_x_cnes <- Datasus_municipio %>% 
+  left_join(cnes, by = c("mun_cod" = 'mun_cod', 'mes' = 'mes')) %>% 
+  select(-mun_nome) %>% 
+  mutate(Leito_Int_Relat = Leito_Int_Total / populacao,
+         Leito_Total = Leito_Int_Total + Leito_Complementar_Total + Leito_Amb_Total + Leito_Urg_Total,
+         Leito_Relat = Leito_Total / populacao  * 1000) %>% 
+  select(mes:regiao, Equipamentos_Existentes, Equipamentos_em_Uso, Leito_Relat)
+```
+
+Para as regressões que serão realizadas, utilizamos do Stata para tal. Para isso, salvamos a base como um Stata Database. 
+```{r}
+write.dta(DataSus_x_cnes, "DATASUS_MUN_CNES.dta")
+```
+
+# Análise Exploratória 
+
+## Gráficos sobre mortalidade 
+```{r}
+Datasus_municipio %>%
+  group_by(wealth, mes) %>% 
+  summarise(excesso = mean(excesso_datasus),
+            sd = sd(excesso_datasus)) %>%
+  mutate(wealth = ifelse(wealth == 'RICO', 'aa.Rico',
+                  ifelse(wealth == 'POBRE', 'cc.Pobre',
+                  ifelse(wealth == 'MEDIO', 'bb.Médio', NA)))) %>%
+  ggplot() + 
+  geom_line(aes(as.factor(mes), excesso, group = wealth, color = wealth), size = 2) +
+  theme_classic() +
+  ylab("Excesso de mortalidade relativo") + 
+  xlab("Mês") +
+  scale_colour_discrete(name = "Nível de PIB per capita") +
+  labs(color = "Nível de Renda",
+       title = "Evolução do excesso de mortalidade em 2020",
+       subtitle = "por municipio",
+       caption = "Fonte: MicroDataSUS e IBGE")
+
+Datasus_municipio %>%
+  group_by(wealth, mes) %>% 
+  summarise(excesso = mean(excesso_datasus),
+            sd = sd(excesso_datasus)) %>%
+  mutate(wealth = ifelse(wealth == 'RICO', 'aa.Rico',
+                   ifelse(wealth == 'POBRE', 'cc.Pobre',
+                   ifelse(wealth == 'MEDIO', 'bb.Médio', NA)))) %>%
+  ggplot() + 
+    geom_line(aes(as.factor(mes), excesso, group = wealth, color = wealth), size = 2) +
+    theme_classic() +
+    ylab("Excesso de mortalidade relativo") + 
+    xlab("Mês") +
+    scale_colour_discrete(name = "Nível de PIB per capita") +
+    scale_colour_manual(name = "Nível de Renda", 
+                        label = c('Rico', 'Médio', 'Pobre'),
+                        values = c('#0059A1','#39A100', '#FFEA54')) +
+    theme(legend.key.size = unit(1, 'cm'),
+        legend.title = element_text(size = 11),
+        legend.text = element_text(size = 11),
+        legend.position = 'right')
+
+```
+
+## Gráfico da trajetória da doença
+```{r}
+Datasus_municipio %>% 
+  group_by(wealth, corona) %>% 
+  summarise(death = mean(excesso_datasus)) %>%
+  mutate(corona = as.factor(corona)) %>%
+  mutate(wealth = ifelse(wealth == 'RICO', 'aa.Rico',
+                         ifelse(wealth == 'POBRE', 'cc.Pobre',
+                         ifelse(wealth == 'MEDIO', 'bb.Médio', NA)))) %>%
+  ggplot(aes(x = corona, y = death, group = wealth, colour = wealth)) +
+  geom_line() +
+  geom_point(size = 3) +
+  ylab('Mortes excessivas') +
+  xlab('Pré x Pós o 1º caso') +
+  labs(title = 'Impacto da pandemia do coronavírus no excesso de mortes',
+       subtitle = 'em nível municipal', 
+       colour = 'Riqueza',
+       caption = 'Fonte: DataSUS e Ministério da Saúde') +
+  scale_colour_discrete(name = "Riqueza", label = c('Rico',
+                                                    'Médio',
+                                                    'Pobre')) +
+  theme_classic()
+
+Datasus_municipio %>% 
+  group_by(wealth, corona) %>% 
+  summarise(death = mean(excesso_datasus)) %>%
+  mutate(corona = as.factor(corona)) %>%
+  mutate(wealth = ifelse(wealth == 'RICO', 'aa.Rico',
+                  ifelse(wealth == 'POBRE', 'cc.Pobre',
+                  ifelse(wealth == 'MEDIO', 'bb.Médio', NA)))) %>%
+  ggplot(aes(x = corona, y = death, group = wealth, colour = wealth)) +
+  geom_line() +
+  geom_point(size = 3) +
+  ylab('Mortes excessivas') +
+  xlab('Pré x Pós o 1º caso') +
+  labs(colour = 'Riqueza') +
+  scale_colour_manual(name = "Riqueza",
+                        label = c('Rico','Médio','Pobre'),
+                        values = c('#0059A1','#39A100', 'gold')) +
+  theme_classic()
+```
+
+## Gráfico da diferença pré e pós tratamento
+```{r}
+DataSus_x_cnes %>% 
+  group_by(wealth, corona) %>% 
+  summarise(death = mean(excesso_datasus),
+            PIB = mean(PIB_per_capita)) %>%
+  mutate(corona = as.factor(corona)) %>%
+  mutate(wealth = ifelse(wealth == 'RICO', 'Rico',
+                         ifelse(wealth == 'POBRE', ' Pobre',
+                         ifelse(wealth == 'MEDIO', 'Médio', NA)))) %>%
+  mutate(wealth = reorder(wealth, PIB, max)) %>% 
+  ggplot(aes(x = death, y = wealth)) +
+    geom_line(size = 1.5, color = 'gray') +
+    geom_point(size = 3.5, aes(colour = corona)) +
+    ylab('') +
+    xlab('Mortes Relativas') +
+    labs(colour = 'Momento') +
+    scale_colour_manual(values = c('blue', 'red'),
+                        label = c('Pré 1º caso', 'Pós 1º caso')) +
+    theme_classic() +
+    theme(legend.position = 'right',
+        axis.text.y = element_text(size = 12))
+
+```
+
+
