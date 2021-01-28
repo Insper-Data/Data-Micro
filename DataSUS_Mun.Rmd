@@ -55,6 +55,33 @@ Obitos_dataSus <- Obitos_dataSus %>%
   mutate(mun_cod = as.double(mun_cod))
 ```
 
+## Dados de internações
+```{r}
+internacoes_2020 <- read_excel('C:/Users/Pedro Saboia/Desktop/Insper Data/DataSets/2020-2019-2018.xlsx', sheet = 1) %>% 
+  select(c(Município:mes)) %>% 
+  separate(Município, into = c('codmun', 'municipio'), sep = 6) %>% 
+  mutate(codmun = as.double(codmun)) %>% 
+  rename(int_2020 = 'Internações')
+
+internacoes_2019 <- read_excel('C:/Users/Pedro Saboia/Desktop/Insper Data/DataSets/2020-2019-2018.xlsx', sheet = 2) %>% 
+  select(c(Município:mes)) %>% 
+  separate(Município, into = c('codmun', 'municipio'), sep = 6) %>% 
+  mutate(codmun = as.double(codmun)) %>% 
+  rename(int_2019 = 'Internações')
+
+internacoes_2018 <- read_excel('C:/Users/Pedro Saboia/Desktop/Insper Data/DataSets/2020-2019-2018.xlsx', sheet = 3) %>% 
+  select(c(Município:mes)) %>% 
+  separate(Município, into = c('codmun', 'municipio'), sep = 6) %>% 
+  mutate(codmun = as.double(codmun)) %>% 
+  rename(int_2018 = 'Internações')
+
+internacoes <- internacoes_2020 %>% 
+  full_join(internacoes_2019, by = c('codmun' = 'codmun', 'mes' = 'mes', 'municipio' = 'municipio')) %>% 
+  full_join(internacoes_2018, by = c('codmun' = 'codmun', 'mes' = 'mes', 'municipio' = 'municipio'))
+
+rm(internacoes_2020, internacoes_2019, internacoes_2018)
+```
+
 ## Dados de casos de COVID-19
 
 Com os dados sobre a porgressão da pandemia temos dois objetivos:
@@ -222,8 +249,10 @@ Datasus_municipio <- Obitos_dataSus %>%
                            'mes' = 'mes')) %>%
   mutate(corona = ifelse(mean > 0.5, 1, 0),
          corona = replace_na(corona, 0)) %>%
+  left_join(internacoes, by = c('mun_cod' = 'codmun', 'mes' = 'mes')) %>%
+  mutate(excesso_relat = (1 + (Obitos_20 / int_2020)) / ( 1 + (((Obitos_18/int_2018) + (Obitos_19/int_2019)) / 2)) ) %>% 
   select(mes, mun_cod, nome_municipio, nome_microrregiao, 
-         UF, excesso_datasus, populacao, metropolitana, 
+         UF, excesso_datasus, excesso_relat, populacao, metropolitana, 
          PIB_per_capita, mais65, corona, regiao)
 ```
 
@@ -277,6 +306,36 @@ DataSus_x_cnes %>%
        subtitle = "por municipio",
        caption = "Fonte: MicroDataSUS e IBGE")
 ```
+
+## Gráfico sobre a mortalidade em função dos leitos 
+
+```{r}
+DataSus_x_cnes %>%
+  filter(!is.na(excesso_relat)) %>% 
+  group_by(wealth, mes) %>% 
+  summarise(excesso = mean(excesso_relat)) %>%
+  mutate(wealth = ifelse(wealth == 'RICO', 'aa.Rico',
+                   ifelse(wealth == 'POBRE', 'cc.Pobre',
+                   ifelse(wealth == 'MEDIO', 'bb.Médio', NA)))) %>%
+  ggplot() + 
+    geom_line(aes(as.factor(mes), excesso, group = wealth, color = wealth), size = 2) +
+    theme_classic() +
+    ylab("Excesso de mortalidade relativo") + 
+    xlab("Mês") +
+    scale_colour_discrete(name = "Nível de PIB per capita") +
+    scale_colour_manual(name = "Nível de Renda", 
+                        label = c('Rico', 'Médio', 'Pobre'),
+                        values = c('#0059A1','#39A100', '#FFEA54')) +
+    theme(legend.key.size = unit(1, 'cm'),
+        legend.title = element_text(size = 11),
+        legend.text = element_text(size = 11),
+        legend.position = 'right') +
+  labs(color = "Nível de Renda",
+       title = "Evolução do excesso de mortalidade em 2020",
+       subtitle = "por municipio",
+       caption = "Fonte: MicroDataSUS e IBGE")
+```
+
 
 ## Gráfico da trajetória da doença
 ```{r}
